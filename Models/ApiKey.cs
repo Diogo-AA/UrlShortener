@@ -11,6 +11,11 @@ public class ApiKey
 
     public static DateTime GetExpirationDate()
     {
-        return DateTime.Now.AddDays(EXPIRATION_TIME_DAYS);
+        return GetExpirationDate(DateTime.Now);
+    }
+
+    public static DateTime GetExpirationDate(DateTime date)
+    {
+        return date.AddDays(EXPIRATION_TIME_DAYS);
     }
 }
