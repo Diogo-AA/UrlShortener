@@ -10,7 +10,6 @@ public class Cryptography
 
     public static string HashPassword(string password)
     {
-
         return BCrypt.Net.BCrypt.EnhancedHashPassword(password, HASH_TYPE);
     }
 
@@ -19,21 +18,18 @@ public class Cryptography
         return BCrypt.Net.BCrypt.EnhancedVerify(passwordProvided, passwordHashed, HASH_TYPE);
     }
 
-    public static string CreateShortedUrl(string originalUrl)
+    public static string GenerateShortUrl()
     {
         string shortedUrl = "";
-        byte[] originalUrlBytes = Encoding.UTF8.GetBytes(originalUrl);
-        ushort originalUrlValue = BitConverter.ToUInt16(originalUrlBytes, 0);
         
         var rng = RandomNumberGenerator.Create();
-        for (int i = 0; i < UrlShorted.URL_SHORTED_LENGTH; i++)
+        for (int i = 0; i < Url.URL_SHORTED_LENGTH; i++)
         {
-            byte[] data = new byte[UrlShorted.URL_SHORTED_LENGTH];
-            rng.GetBytes(data, 0, UrlShorted.URL_SHORTED_LENGTH);
+            byte[] randomData = new byte[Url.URL_SHORTED_LENGTH];
+            rng.GetBytes(randomData, 0, Url.URL_SHORTED_LENGTH);
 
-            int randomNumber = originalUrlValue + BitConverter.ToUInt16(data, 0);
-            int index = randomNumber % UrlShorted.ALLOWED_CHARS.Length;
-            shortedUrl += UrlShorted.ALLOWED_CHARS[index];
+            int index = BitConverter.ToUInt16(randomData, 0) % Url.ALLOWED_CHARS.Length;
+            shortedUrl += Url.ALLOWED_CHARS[index];
         }
 
         return shortedUrl;
