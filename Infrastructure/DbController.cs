@@ -6,7 +6,7 @@ namespace UrlShortener.Infrastructure;
 
 public class DbController
 {
-    private readonly NpgsqlDataSource? dataSource;
+    private readonly NpgsqlDataSource dataSource;
 
     public DbController(string connectionString)
     {
@@ -23,12 +23,13 @@ public class DbController
     {
         try
         {
-            using var conn = await dataSource!.OpenConnectionAsync();
+            using var conn = await dataSource.OpenConnectionAsync();
 
             string sql = """
-                SELECT TOP 1 id, username
-                FROM users
+                SELECT id, username
+                FROM "Users"
                 WHERE username = @username
+                LIMIT 1
                 """;
             await using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("username", username);
@@ -50,12 +51,13 @@ public class DbController
     {
         try
         {
-            using var conn = await dataSource!.OpenConnectionAsync();
+            using var conn = await dataSource.OpenConnectionAsync();
 
             string sql = """
-                SELECT TOP 1 username
-                FROM users
+                SELECT username
+                FROM "Users"
                 WHERE username = @username
+                LIMIT 1
                 """;
             await using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("username", username);
@@ -71,23 +73,23 @@ public class DbController
 
     public async Task<bool> CreateUser(string username, string password)
     {
-        using var conn = await dataSource!.OpenConnectionAsync();
+        using var conn = await dataSource.OpenConnectionAsync();
         using var transaction = await conn.BeginTransactionAsync();
 
         try
         {
             string sql = """
-                INSERT INTO users (id, username, password) 
+                INSERT INTO "Users" (id, username, password) 
                 VALUES (@id, @username, @password)
                 """;
             await using var cmd = new NpgsqlCommand(sql, conn, transaction);
 
-            var id = Guid.NewGuid();
-            string passwordHashed = Cryptography.HashPassword(password);
+            var id = Guid.CreateVersion7();
+            string hashedPassword = Cryptography.HashPassword(password);
 
             cmd.Parameters.AddWithValue("id", id);
             cmd.Parameters.AddWithValue("username", username);
-            cmd.Parameters.AddWithValue("password", passwordHashed);
+            cmd.Parameters.AddWithValue("password", hashedPassword);
 
             await cmd.ExecuteNonQueryAsync();
             await transaction.CommitAsync();
@@ -104,12 +106,13 @@ public class DbController
     {
         try
         {
-            using var conn = await dataSource!.OpenConnectionAsync();
+            using var conn = await dataSource.OpenConnectionAsync();
 
             string sql = """
-                SELECT TOP 1 password
-                FROM users
+                SELECT password
+                FROM "Users"
                 WHERE username = @username
+                LIMIT 1
                 """;
             await using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("username", username);
@@ -129,23 +132,50 @@ public class DbController
         }
     }
 
-    public async Task<bool> RemoveUser(Guid id)
+    public async Task<bool> RemoveUser(string username)
     {
-        using var conn = await dataSource!.OpenConnectionAsync();
+        using var conn = await dataSource.OpenConnectionAsync();
         using var transaction = await conn.BeginTransactionAsync();
 
         try
         {
             string sql = """
-                DELETE FROM users
+                DELETE FROM "Users"
+                WHERE username = @username
+                """;
+            await using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("username", username);
+
+            int rowsModified = await cmd.ExecuteNonQueryAsync();
+            transaction.Commit();
+
+            return rowsModified == 1;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            return false;
+        }
+    }
+
+    public async Task<bool> RemoveUser(Guid id)
+    {
+        using var conn = await dataSource.OpenConnectionAsync();
+        using var transaction = await conn.BeginTransactionAsync();
+
+        try
+        {
+            string sql = """
+                DELETE FROM "Users"
                 WHERE id = @id
                 """;
             await using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("id", id);
 
-            await cmd.ExecuteNonQueryAsync();
+            int rowsModified = await cmd.ExecuteNonQueryAsync();
             transaction.Commit();
-            return true;
+
+            return rowsModified == 1;
         }
         catch
         {
@@ -158,22 +188,22 @@ public class DbController
 
     #region Api Key functions
 
-    public async Task<Guid?> CreateApiKey(string userId)
+    public async Task<Guid?> CreateApiKey(Guid userId)
     {
-        using var conn = await dataSource!.OpenConnectionAsync();
+        using var conn = await dataSource.OpenConnectionAsync();
         using var transaction = await conn.BeginTransactionAsync();
 
         try
         {
             string sql = """
-                INSERT INTO ApiKeys (id, userId, key, expirationDate) 
+                INSERT INTO "ApiKeys" (id, "userId", key, "expirationDate")
                 VALUES (@id, @userId, @key, @expirationDate)
                 """;
             await using var cmd = new NpgsqlCommand(sql, conn);
 
-            var id = Guid.NewGuid();
-            var apiKey = Guid.NewGuid();
-            var expirationDate = ApiKey.GetExpirationDate();
+            Guid id = Guid.CreateVersion7();
+            Guid apiKey = Guid.CreateVersion7();
+            DateTime expirationDate = ApiKey.GetExpirationDate();
 
             cmd.Parameters.AddWithValue("id", id);
             cmd.Parameters.AddWithValue("userId", userId);
@@ -191,28 +221,34 @@ public class DbController
         }
     }
 
-    public async Task<Guid?> UpdateApiKey(string userId)
+    public async Task<Guid?> UpdateApiKey(Guid userId)
     {
-        using var conn = await dataSource!.OpenConnectionAsync();
+        using var conn = await dataSource.OpenConnectionAsync();
         using var transaction = await conn.BeginTransactionAsync();
 
         try
         {
             string sql = """
-                UPDATE ApiKeys
-                SET key = @key, expirationDate = @expirationDate
-                WHERE userId = @userId
+                UPDATE "ApiKeys"
+                SET key = @key, "expirationDate" = @expirationDate
+                WHERE "userId" = @userId
                 """;
             await using var cmd = new NpgsqlCommand(sql, conn);
 
-            var apiKey = Guid.NewGuid();
+            var apiKey = Guid.CreateVersion7();
             var expirationDate = ApiKey.GetExpirationDate();
 
             cmd.Parameters.AddWithValue("userId", userId);
             cmd.Parameters.AddWithValue("key", apiKey);
             cmd.Parameters.AddWithValue("expirationDate", expirationDate);
 
-            await cmd.ExecuteNonQueryAsync();
+            int rowsUpdated = await cmd.ExecuteNonQueryAsync();
+            if (rowsUpdated != 1)
+            {
+                await transaction.RollbackAsync();
+                return null;
+            }
+
             await transaction.CommitAsync();
             return apiKey;
         }
@@ -223,22 +259,22 @@ public class DbController
         }
     }
 
-    public async Task<Guid?> GetApiKey(string userId)
+    public async Task<Guid?> GetApiKey(Guid userId)
     {
         try
         {
-            using var conn = await dataSource!.OpenConnectionAsync();
+            using var conn = await dataSource.OpenConnectionAsync();
 
             string sql = """
-                SELECT TOP 1 key, expirationDate
-                FROM ApiKeys
-                WHERE userId = @userId
+                SELECT key, "expirationDate"
+                FROM "ApiKeys"
+                WHERE "userId" = @userId
+                LIMIT 1
                 """;
             await using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("userId", userId);
 
             using var reader = await cmd.ExecuteReaderAsync();
-
             if (!reader.HasRows)
                 return null;
 
@@ -246,7 +282,7 @@ public class DbController
             var apiKey = reader.GetGuid(0);
             var expirationDate = reader.GetDateTime(1);
 
-            return expirationDate < DateTime.Now ? apiKey : null;
+            return expirationDate >= DateTime.Now ? apiKey : null;
         }
         catch
         {
@@ -258,21 +294,21 @@ public class DbController
 
     #region Urls functions
 
-    public async Task<bool> CreateUrl(Guid userId, string originalUrl)
+    public async Task<string?> CreateShortedUrl(Guid userId, string originalUrl)
     {
-        using var conn = await dataSource!.OpenConnectionAsync();
+        using var conn = await dataSource.OpenConnectionAsync();
         using var transaction = await conn.BeginTransactionAsync();
 
         try
         {
             string sql = """
-                INSERT INTO urls (id, userId, shortedUrl, originalUrl)
+                INSERT INTO "Urls" (id, "userId", "shortedUrl", "originalUrl")
                 VALUES (@id, @userId, @shortedUrl, @originalUrl)
                 """;
             await using var cmd = new NpgsqlCommand(sql, conn);
 
-            var id = Guid.NewGuid();
-            string shortedUrl = Cryptography.CreateShortedUrl(originalUrl);
+            var id = Guid.CreateVersion7();
+            string shortedUrl = Cryptography.GenerateShortUrl();
 
             cmd.Parameters.AddWithValue("id", id);
             cmd.Parameters.AddWithValue("userId", userId);
@@ -281,29 +317,30 @@ public class DbController
 
             await cmd.ExecuteNonQueryAsync();
             await transaction.CommitAsync();
-            return true;
+            return shortedUrl;
         }
         catch
         {
             await transaction.RollbackAsync();
-            return false;
+            return null;
         }
     }
 
-    public async Task<string?> GetOriginalUrl(Guid userId, string shortedUrl)
+    public async Task<string?> GetOriginalUrl(Guid userId, string shortedUrlId)
     {
         try
         {
-            using var conn = await dataSource!.OpenConnectionAsync();
+            using var conn = await dataSource.OpenConnectionAsync();
 
             string sql = """
-                SELECT TOP 1 originalUrl
-                FROM urls
-                WHERE userId = @userId and shortedUrl = @shortedUrl
+                SELECT "originalUrl"
+                FROM "Urls"
+                WHERE "userId" = @userId and "shortedUrl" = @shortedUrl
+                LIMIT 1
                 """;
             await using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("userId", userId);
-            cmd.Parameters.AddWithValue("shortedUrl", shortedUrl);
+            cmd.Parameters.AddWithValue("shortedUrl", shortedUrlId);
 
             using var reader = await cmd.ExecuteReaderAsync();
             if (!reader.HasRows)
@@ -318,23 +355,29 @@ public class DbController
         }
     }
 
-    public async Task<bool> RemoveUrl(Guid userId, string originalUrl)
+    public async Task<bool> RemoveUrl(Guid userId, string shortedUrlId)
     {
-        using var conn = await dataSource!.OpenConnectionAsync();
+        using var conn = await dataSource.OpenConnectionAsync();
         using var transaction = await conn.BeginTransactionAsync();
 
         try
         {
             string sql = """
-                DELETE FROM urls
-                WHERE userId = @userId and originalUrl = @originalUrl
+                DELETE FROM "Urls"
+                WHERE "userId" = @userId and "shortedUrl" = @shortedUrl
                 """;
             await using var cmd = new NpgsqlCommand(sql, conn);
 
             cmd.Parameters.AddWithValue("userId", userId);
-            cmd.Parameters.AddWithValue("originalUrl", originalUrl);
+            cmd.Parameters.AddWithValue("shortedUrl", shortedUrlId);
 
-            await cmd.ExecuteNonQueryAsync();
+            int numRowsAffected = await cmd.ExecuteNonQueryAsync();
+            if (numRowsAffected != 1)
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
+
             await transaction.CommitAsync();
             return true;
         }
@@ -345,25 +388,28 @@ public class DbController
         }
     }
 
-    public async Task<List<UrlShorted>> GetAllUrlsFromUser(Guid userId)
+    public async Task<IEnumerable<Url>> GetAllUrlsFromUser(Guid userId)
     {
-        var urls = new List<UrlShorted>();
         try
         {
-            using var conn = await dataSource!.OpenConnectionAsync();
+            using var conn = await dataSource.OpenConnectionAsync();
 
             string sql = """
-                SELECT id, shortedUrl, originalUrl
-                FROM urls
-                WHERE userId = @userId
+                SELECT id, "shortedUrl", "originalUrl"
+                FROM "Urls"
+                WHERE "userId" = @userId
                 """;
             await using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("userId", userId);
 
             using var reader = await cmd.ExecuteReaderAsync();
+            if (!reader.HasRows)
+                return Enumerable.Empty<Url>();
+
+            var urls = new List<Url>();
             while (await reader.ReadAsync())
             {
-                urls.Add(new UrlShorted()
+                urls.Add(new Url()
                 {
                     Id = reader.GetGuid(0),
                     UserId = userId,
