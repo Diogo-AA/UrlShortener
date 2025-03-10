@@ -1,0 +1,18 @@
+services:
+  url-shortener:
+    image: ${DOCKER_REGISTRY-}url-shortener
+    ports:
+      - "5094:80"   # Mapea el puerto HTTP
+      - "7262:443"  # Mapea el puerto HTTPS
+    environment:
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_HTTPS_PORT=7262
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+    volumes:
+      - ${HTTPS_CERTIFICATE_PATH}:/https/aspnetapp.pfx:/https/  # Mapea el certificado en tu máquina local al contenedor
+    networks:
+      - aspnetcore-network
+
+networks:
+  aspnetcore-network:
+    driver: bridge

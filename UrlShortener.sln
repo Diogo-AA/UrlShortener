@@ -5,8 +5,6 @@ VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UrlShortener", "UrlShortener.csproj", "{46B58001-ED26-4079-9A96-15866F097DEE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UrlShortenerTests", "..\UrlShortenerTests\UrlShortenerTests.csproj", "{3E620B3B-E5AF-4135-A7C9-8A5E7BFDBF8D}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{46B58001-ED26-4079-9A96-15866F097DEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{46B58001-ED26-4079-9A96-15866F097DEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{46B58001-ED26-4079-9A96-15866F097DEE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3E620B3B-E5AF-4135-A7C9-8A5E7BFDBF8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3E620B3B-E5AF-4135-A7C9-8A5E7BFDBF8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3E620B3B-E5AF-4135-A7C9-8A5E7BFDBF8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3E620B3B-E5AF-4135-A7C9-8A5E7BFDBF8D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
