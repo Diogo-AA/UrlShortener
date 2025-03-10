@@ -2,6 +2,7 @@
 
 public class ApiKey
 {
+    public const int MAX_MINUTES_BETWEEN_UPDATES = 3;
     private const int EXPIRATION_TIME_DAYS = 7;
 
     public Guid Id { get; set; }
