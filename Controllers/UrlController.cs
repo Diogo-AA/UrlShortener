@@ -15,7 +15,7 @@ public class UrlController : ControllerBase
     }
 
     [HttpPost("create")]
-    public async Task<IActionResult> Create([FromHeader(Name = "x-api-key")] Guid apiKey, [FromQuery] string url)
+    public async Task<IActionResult> Create([FromHeader(Name = "x-api-key")] Guid apiKey, [FromBody] Uri url)
     {
         bool validUrl = Models.Url.IsValidUrl(url);
         if (!validUrl)
@@ -33,7 +33,7 @@ public class UrlController : ControllerBase
     }
 
     [HttpPost("remove")]
-    public async Task<IActionResult> Remove([FromHeader(Name = "x-api-key")] Guid apiKey, [FromQuery] string url)
+    public async Task<IActionResult> Remove([FromHeader(Name = "x-api-key")] Guid apiKey, [FromBody] string url)
     {
         bool validApiKey = await _repository.ValidateApiKey(apiKey);
         if (!validApiKey)

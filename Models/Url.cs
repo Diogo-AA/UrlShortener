@@ -8,9 +8,8 @@ public class Url
     public required string ShortedUrl { get; set; }
     public required string OriginalUrl { get; set; }
 
-    public static bool IsValidUrl(string url)
+    public static bool IsValidUrl(Uri url)
     {
-        return Uri.TryCreate(url, UriKind.Absolute, out Uri? uriResult)
-            && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        return url.IsAbsoluteUri && (url.Scheme == Uri.UriSchemeHttp || url.Scheme == Uri.UriSchemeHttps);
     }
 }

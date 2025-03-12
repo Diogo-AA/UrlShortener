@@ -505,7 +505,7 @@ public class RepositoryPostgre : IRepository
 
     #region Urls functions
 
-    public async Task<string?> CreateShortedUrl(Guid apiKey, string originalUrl)
+    public async Task<string?> CreateShortedUrl(Guid apiKey, Uri originalUrl)
     {
         User? user = await GetUser(apiKey);
         if (user is null)
@@ -531,7 +531,7 @@ public class RepositoryPostgre : IRepository
             cmd.Parameters.AddWithValue("id", id);
             cmd.Parameters.AddWithValue("userId", user.Id);
             cmd.Parameters.AddWithValue("shortedUrl", shortedUrl);
-            cmd.Parameters.AddWithValue("originalUrl", originalUrl);
+            cmd.Parameters.AddWithValue("originalUrl", originalUrl.AbsoluteUri);
 
             await cmd.ExecuteNonQueryAsync();
             await transaction.CommitAsync();
