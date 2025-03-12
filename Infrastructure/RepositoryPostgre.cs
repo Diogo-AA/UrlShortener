@@ -15,11 +15,9 @@ public class RepositoryPostgre : IRepository
 
         if (dataSource is null)
             throw new Exception("Error: Couldn't connect to the database");
-
-        InitializeTables();
     }
 
-    private void InitializeTables()
+    public void Initialize()
     {
         InitializeUsersTable();
         InitializeApiKeysTable();

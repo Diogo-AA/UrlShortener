@@ -7,6 +7,7 @@ public interface IRepository
     public const int LIMIT_URLS_SHOWN = 100;
     public const int DEFAULT_URLS_SHOWN = 20;
 
+    public void Initialize();
     Task<User?> GetUser(string username);
     Task<User?> GetUser(Guid apiKey);
     Task<bool> IsUsernameInUse(string username);

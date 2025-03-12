@@ -21,7 +21,7 @@ else
     connectionStringKey = "ConnectionStrings:ProdConnection";
 }
 
-builder.Services.AddSingleton<IRepository, RepositoryPostgre>(sp =>
+builder.Services.AddScoped<IRepository, RepositoryPostgre>(sp =>
 {
     string? connectionString = builder.Configuration[connectionStringKey];
     if (string.IsNullOrEmpty(connectionString))
@@ -34,6 +34,12 @@ builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var repository = scope.ServiceProvider.GetRequiredService<IRepository>();
+    repository.Initialize();
+}
 
 if (app.Environment.IsDevelopment())
 {
