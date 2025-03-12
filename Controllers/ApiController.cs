@@ -16,16 +16,16 @@ namespace UrlShortener.Controllers
         }
 
         [HttpPost("get")]
-        public async Task<IActionResult> Get([FromBody] User userRequest, [FromQuery] bool updateApiKeyIfExpired)
+        public async Task<IActionResult> Get([FromBody] User userRequest, [FromQuery] bool? updateIfExpired)
         {
             bool validCredentials = await _repository.VerifyUser(userRequest);
             if (!validCredentials)
                 return BadRequest("Username or password incorrect.");
 
             Guid? apiKey = await _repository.GetApiKey(userRequest.Id);
-            if (!apiKey.HasValue && !updateApiKeyIfExpired)
+            if (!apiKey.HasValue && !updateIfExpired.GetValueOrDefault())
             {
-                return Ok("API Key expired. Update your API Key using the 'update' endpoint or defining the parameter 'updateApiKeyIfExpired' to true.");
+                return Ok("API Key expired. Update your API Key using the 'update' endpoint or defining the parameter 'updateIfExpired' to true.");
             }
             else if (!apiKey.HasValue)
             {
