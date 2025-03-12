@@ -3,32 +3,38 @@ using UrlShortener.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.ConfigureKestrel(options =>
+string connectionStringKey;
+if (builder.Environment.IsDevelopment())
 {
-    options.ConfigureHttpsDefaults(httpsOptions =>
+    builder.WebHost.ConfigureKestrel(options =>
     {
-        httpsOptions.ServerCertificate = X509CertificateLoader.LoadPkcs12FromFile("/https/aspnetapp.pfx", null);
+        options.ConfigureHttpsDefaults(httpsOptions =>
+        {
+            httpsOptions.ServerCertificate = X509CertificateLoader.LoadPkcs12FromFile("/https/aspnetapp.pfx", null);
+        });
     });
-});
 
-// Add services to the container.
+    connectionStringKey = "ConnectionStrings:DevConnection";
+}
+else
+{
+    connectionStringKey = "ConnectionStrings:ProdConnection";
+}
+
+builder.Services.AddSingleton<IRepository, RepositoryPostgre>(sp =>
+{
+    string? connectionString = builder.Configuration[connectionStringKey];
+    if (string.IsNullOrEmpty(connectionString))
+        throw new ArgumentException("Error: Connection string cannot be null or empty");
+    return new RepositoryPostgre(connectionString);
+});
 
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-
-builder.Services.AddSingleton<DbController>(sp =>
-{
-    string? connectionString = sp.GetService<IConfiguration>()?["ConnectionString"];
-    if (string.IsNullOrEmpty(connectionString))
-        throw new ArgumentException("Error: Connection string cannot be null or empty");
-    return new DbController(connectionString);
-});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
