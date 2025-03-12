@@ -4,19 +4,120 @@ using UrlShortener.Utils;
 
 namespace UrlShortener.Infrastructure;
 
-public class DbController
+public class RepositoryPostgre : IRepository
 {
     private readonly NpgsqlDataSource dataSource;
-    public const int LIMIT_URLS_SHOWN = 100;
-    public const int DEFAULT_URLS_SHOWN = 20;
 
-    public DbController(string connectionString)
+    public RepositoryPostgre(string connectionString)
     {
         dataSource = new NpgsqlDataSourceBuilder(connectionString)
                          .Build();
 
         if (dataSource is null)
             throw new Exception("Error: Couldn't connect to the database");
+
+        InitializeTables();
+    }
+
+    private void InitializeTables()
+    {
+        InitializeUsersTable();
+        InitializeApiKeysTable();
+        InitializeUrlsTable();
+    }
+
+    private void InitializeUsersTable()
+    {
+        using var conn = dataSource.OpenConnection();
+        using var cmd = new NpgsqlCommand("""
+            CREATE TABLE IF NOT EXISTS public."Users"
+            (
+                id uuid NOT NULL,
+                username character varying(32) COLLATE pg_catalog."default" NOT NULL,
+                password text COLLATE pg_catalog."default" NOT NULL,
+                CONSTRAINT "Users_pkey" PRIMARY KEY (id),
+                CONSTRAINT "UNIQUE_USERNAME" UNIQUE (username)
+            )
+
+            TABLESPACE pg_default;
+
+            ALTER TABLE IF EXISTS public."Users"
+                OWNER to postgres;
+        """, conn);
+
+        cmd.ExecuteNonQuery();
+    }
+
+    private void InitializeApiKeysTable()
+    {
+        using var conn = dataSource.OpenConnection();
+        using var cmd = new NpgsqlCommand("""
+        CREATE TABLE IF NOT EXISTS public."ApiKeys"
+        (
+            id uuid NOT NULL,
+            "userId" uuid NOT NULL,
+            key uuid NOT NULL,
+            "expirationDate" date NOT NULL,
+            "lastUpdated" timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT "ApiKeys_pkey" PRIMARY KEY (id),
+            CONSTRAINT "UNIQUE_API_KEY" UNIQUE (key),
+            CONSTRAINT "FK_USER_ID" FOREIGN KEY ("userId")
+                REFERENCES public."Users" (id) MATCH SIMPLE
+                ON UPDATE CASCADE
+                ON DELETE CASCADE
+        )
+
+        TABLESPACE pg_default;
+
+        ALTER TABLE IF EXISTS public."ApiKeys"
+            OWNER to postgres;
+
+        CREATE OR REPLACE FUNCTION public.update_modified_column()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $function$
+        BEGIN
+            NEW."lastUpdated" = now();
+            RETURN NEW;   
+        END;
+        $function$;
+
+        CREATE OR REPLACE TRIGGER update_timestamp_on_change
+            BEFORE UPDATE 
+            ON public."ApiKeys"
+            FOR EACH ROW
+            EXECUTE FUNCTION public.update_modified_column();
+        """, conn);
+
+        cmd.ExecuteNonQuery();
+    }
+
+    private void InitializeUrlsTable()
+    {
+        using var conn = dataSource.OpenConnection();
+        using var cmd = new NpgsqlCommand("""
+            CREATE TABLE IF NOT EXISTS public."Urls"
+            (
+                id uuid NOT NULL,
+                "userId" uuid NOT NULL,
+                "shortedUrl" text COLLATE pg_catalog."default" NOT NULL,
+                "originalUrl" text COLLATE pg_catalog."default" NOT NULL,
+                CONSTRAINT "Urls_pkey" PRIMARY KEY (id),
+                CONSTRAINT "UNIQUE_ORIGINAL_URL" UNIQUE ("originalUrl"),
+                CONSTRAINT "FK_USER_ID" FOREIGN KEY ("userId")
+                    REFERENCES public."Users" (id) MATCH SIMPLE
+                    ON UPDATE CASCADE
+                    ON DELETE CASCADE
+                    NOT VALID
+            )
+
+            TABLESPACE pg_default;
+
+            ALTER TABLE IF EXISTS public."Urls"
+                OWNER to postgres;
+        """, conn);
+
+        cmd.ExecuteNonQuery();
     }
 
     #region Users functions
@@ -61,8 +162,8 @@ public class DbController
             using var conn = await dataSource.OpenConnectionAsync();
 
             string sql = """
-                SELECT id, username
-                FROM "Users"
+                SELECT u.id, username
+                FROM "Users" u
                 INNER JOIN "ApiKeys" ON key = @apiKey
                 LIMIT 1
                 """;
@@ -247,7 +348,7 @@ public class DbController
 
     #region Api Key functions
 
-    public async Task<Guid?> CreateApiKey(Guid userId, NpgsqlConnection conn, NpgsqlTransaction transaction)
+    private async Task<Guid?> CreateApiKey(Guid userId, NpgsqlConnection conn, NpgsqlTransaction transaction)
     {
         try
         {
@@ -438,10 +539,14 @@ public class DbController
             await transaction.CommitAsync();
             return shortedUrl;
         }
-        catch
+        catch (NpgsqlException ex) 
         {
             await transaction.RollbackAsync();
-            return null;
+
+            if (ex.SqlState == PostgresErrorCodes.UniqueViolation)
+                return null;
+            else
+                throw;
         }
     }
 

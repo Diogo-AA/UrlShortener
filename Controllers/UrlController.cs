@@ -7,11 +7,11 @@ namespace UrlShortener.Controllers;
 [Route("url")]
 public class UrlController : ControllerBase
 {
-    private readonly DbController _dbController;
+    private readonly IRepository _repository;
 
-    public UrlController(DbController dbController)
+    public UrlController(IRepository repository)
     {
-        _dbController = dbController;
+        _repository = repository;
     }
 
     [HttpPost("create")]
@@ -21,13 +21,13 @@ public class UrlController : ControllerBase
         if (!validUrl)
             return BadRequest("Invalid url.");
 
-        bool validApiKey = await _dbController.ValidateApiKey(apiKey);
+        bool validApiKey = await _repository.ValidateApiKey(apiKey);
         if (!validApiKey)
             return BadRequest("Invalid or expired API Key.");
 
-        string? shortedUrl = await _dbController.CreateShortedUrl(apiKey, url);
+        string? shortedUrl = await _repository.CreateShortedUrl(apiKey, url);
         if (string.IsNullOrEmpty(shortedUrl))
-            return Problem("Error creating the shorted url. Try again later.");
+            return BadRequest($"The url '{url}' is already shortened.");
 
         return Ok(shortedUrl);
     }
@@ -35,11 +35,11 @@ public class UrlController : ControllerBase
     [HttpPost("remove")]
     public async Task<IActionResult> Remove([FromHeader(Name = "x-api-key")] Guid apiKey, [FromQuery] string url)
     {
-        bool validApiKey = await _dbController.ValidateApiKey(apiKey);
+        bool validApiKey = await _repository.ValidateApiKey(apiKey);
         if (!validApiKey)
             return BadRequest("Invalid or expired API Key.");
 
-        bool removed = await _dbController.RemoveUrl(apiKey, url);
+        bool removed = await _repository.RemoveUrl(apiKey, url);
         if (!removed)
             return Problem("Error removing the shorted url. Try again later.");
 
@@ -47,16 +47,16 @@ public class UrlController : ControllerBase
     }
 
     [HttpPost("get")]
-    public async Task<IActionResult> Get([FromHeader(Name = "x-api-key")] Guid apiKey, [FromQuery] int limit = DbController.DEFAULT_URLS_SHOWN)
+    public async Task<IActionResult> Get([FromHeader(Name = "x-api-key")] Guid apiKey, [FromQuery] int limit = IRepository.DEFAULT_URLS_SHOWN)
     {
-        if (limit < 0 || limit > DbController.LIMIT_URLS_SHOWN)
-            return BadRequest($"The limit of the results shown must be between 0 and {DbController.LIMIT_URLS_SHOWN}");
+        if (limit < 0 || limit > IRepository.LIMIT_URLS_SHOWN)
+            return BadRequest($"The limit of the results shown must be between 0 and {IRepository.LIMIT_URLS_SHOWN}");
 
-        bool validApiKey = await _dbController.ValidateApiKey(apiKey);
+        bool validApiKey = await _repository.ValidateApiKey(apiKey);
         if (!validApiKey)
             return BadRequest("Invalid or expired API Key.");
 
-        var urls = await _dbController.GetAllUrlsFromUser(apiKey, limit);
+        var urls = await _repository.GetAllUrlsFromUser(apiKey, limit);
 
         return Ok(urls);
     }

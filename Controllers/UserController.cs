@@ -8,25 +8,21 @@ namespace UrlShortener.Controllers;
 [Route("user")]
 public class UserController : ControllerBase
 {
-    private readonly DbController _dbController;
+    private readonly IRepository _repository;
 
-    public UserController(DbController dbController)
+    public UserController(IRepository repository)
     {
-        _dbController = dbController;
+        _repository = repository;
     }
 
     [HttpPost("create")]
     public async Task<IActionResult> Create([FromBody] User userRequest)
     {
-        bool isUsernameInUse = await _dbController.IsUsernameInUse(userRequest.Username!);
+        bool isUsernameInUse = await _repository.IsUsernameInUse(userRequest.Username!);
         if (isUsernameInUse)
             return Conflict("Username is already in use.");
 
-        bool validCredentials = await _dbController.VerifyUser(userRequest);
-        if (!validCredentials)
-            return BadRequest("Username or password incorrect.");
-
-        Guid? apiKey = await _dbController.CreateUser(userRequest);
+        Guid? apiKey = await _repository.CreateUser(userRequest);
         if (!apiKey.HasValue)
             return StatusCode(StatusCodes.Status500InternalServerError, "Error creating the user. Try again later.");
 
@@ -36,7 +32,7 @@ public class UserController : ControllerBase
     [HttpPost("update-password")]
     public async Task<IActionResult> UpdatePassword([FromBody] User userRequest)
     {
-        bool passwordUpdated = await _dbController.UpdateUserPassword(userRequest);
+        bool passwordUpdated = await _repository.UpdateUserPassword(userRequest);
         if (!passwordUpdated)
             return StatusCode(StatusCodes.Status500InternalServerError, "Error updating the password. Make sure you use the right password.");
 
@@ -46,11 +42,11 @@ public class UserController : ControllerBase
     [HttpPost("remove")]
     public async Task<IActionResult> Remove([FromBody] User userRequest)
     {
-        bool validCredentials = await _dbController.VerifyUser(userRequest);
+        bool validCredentials = await _repository.VerifyUser(userRequest);
         if (!validCredentials)
             return BadRequest("Username or password incorrect.");
 
-        bool userRemoved = await _dbController.RemoveUser(userRequest.Username!);
+        bool userRemoved = await _repository.RemoveUser(userRequest.Username!);
         if (!userRemoved)
             return StatusCode(StatusCodes.Status500InternalServerError, "Error removing the user. Try again later.");
 

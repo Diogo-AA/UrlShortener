@@ -8,21 +8,21 @@ namespace UrlShortener.Controllers
     [ApiController]
     public class ApiController : ControllerBase
     {
-        private readonly DbController _dbController;
+        private readonly IRepository _repository;
 
-        public ApiController(DbController dbController)
+        public ApiController(IRepository repository)
         {
-            _dbController = dbController;
+            _repository = repository;
         }
 
         [HttpPost("get")]
         public async Task<IActionResult> Get([FromBody] User userRequest, [FromQuery] bool updateApiKeyIfExpired)
         {
-            bool validCredentials = await _dbController.VerifyUser(userRequest);
+            bool validCredentials = await _repository.VerifyUser(userRequest);
             if (!validCredentials)
                 return BadRequest("Username or password incorrect.");
 
-            Guid? apiKey = await _dbController.GetApiKey(userRequest.Id);
+            Guid? apiKey = await _repository.GetApiKey(userRequest.Id);
             if (!apiKey.HasValue && !updateApiKeyIfExpired)
             {
                 return Ok("API Key expired. Update your API Key using the 'update' endpoint or defining the parameter 'updateApiKeyIfExpired' to true.");
@@ -38,11 +38,11 @@ namespace UrlShortener.Controllers
         [HttpPost("update")]
         public async Task<IActionResult> Update([FromBody] User userRequest)
         {
-            bool validCredentials = await _dbController.VerifyUser(userRequest);
+            bool validCredentials = await _repository.VerifyUser(userRequest);
             if (!validCredentials)
                 return BadRequest("Username or password incorrect.");
 
-            DateTime? lastUpdated = await _dbController.GetLastTimeApiKeyUpdated(userRequest.Id);
+            DateTime? lastUpdated = await _repository.GetLastTimeApiKeyUpdated(userRequest.Id);
             if (!lastUpdated.HasValue)
                 return Problem("Error updating the API Key. Try again later.");
 
@@ -54,7 +54,7 @@ namespace UrlShortener.Controllers
 
         private async Task<IActionResult> UpdateApiKey(Guid userId)
         {
-            Guid? apiKey = await _dbController.UpdateApiKey(userId);
+            Guid? apiKey = await _repository.UpdateApiKey(userId);
             if (!apiKey.HasValue)
                 return Problem("Error updating the API Key. Try again later.");
 
