@@ -1,15 +1,35 @@
 services:
   url-shortener:
     image: ${DOCKER_REGISTRY-}url-shortener
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
-      - "5094:80"   # Mapea el puerto HTTP
-      - "7262:443"  # Mapea el puerto HTTPS
+      - "5094:80"
+      - "7262:443"
     environment:
+      - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
       - ASPNETCORE_HTTPS_PORT=7262
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - ConnectionStrings__DevConnection=Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD};
     volumes:
-      - ${HTTPS_CERTIFICATE_PATH}:/https/aspnetapp.pfx:/https/  # Mapea el certificado en tu máquina local al contenedor
+      - ${HTTPS_CERTIFICATE_PATH}:/https/aspnetapp.pfx:/https/
+    networks:
+      - aspnetcore-network
+  postgres:
+    image: postgres
+    restart: always
+    user: ${DB_USER}
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - aspnetcore-network
 
