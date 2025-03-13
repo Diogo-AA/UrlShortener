@@ -548,6 +548,34 @@ public class RepositoryPostgre : IRepository
         }
     }
 
+    public async Task<string?> GetOriginalUrl(string shortedUrlId)
+    {
+        try
+        {
+            using var conn = await dataSource.OpenConnectionAsync();
+
+            string sql = """
+                SELECT "originalUrl"
+                FROM "Urls"
+                WHERE "shortedUrl" = @shortedUrl
+                LIMIT 1
+                """;
+            await using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("shortedUrl", shortedUrlId);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (!reader.HasRows)
+                return null;
+
+            await reader.ReadAsync();
+            return reader.GetString(0);
+        }
+        catch
+        {
+            throw;
+        }
+    }
+
     public async Task<string?> GetOriginalUrl(Guid userId, string shortedUrlId)
     {
         try

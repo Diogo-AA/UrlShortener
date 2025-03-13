@@ -20,6 +20,7 @@ public interface IRepository
     Task<Guid?> GetApiKey(Guid userId);
     Task<bool> ValidateApiKey(Guid apiKey);
     Task<string?> CreateShortedUrl(Guid apiKey, Uri originalUrl);
+    Task<string?> GetOriginalUrl(string shortedUrlId);
     Task<string?> GetOriginalUrl(Guid userId, string shortedUrlId);
     Task<bool> RemoveUrl(Guid apiKey, string shortedUrlId);
     Task<IEnumerable<Url>> GetAllUrlsFromUser(Guid apiKey, int limit);
