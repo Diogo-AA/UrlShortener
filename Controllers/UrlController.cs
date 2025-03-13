@@ -32,8 +32,8 @@ public class UrlController : ControllerBase
         return Ok(shortedUrl);
     }
 
-    [HttpPost("remove")]
-    public async Task<IActionResult> Remove([FromHeader(Name = "x-api-key")] Guid apiKey, [FromBody] string url)
+    [HttpDelete("delete")]
+    public async Task<IActionResult> Delete([FromHeader(Name = "x-api-key")] Guid apiKey, [FromBody] string url)
     {
         bool validApiKey = await _repository.ValidateApiKey(apiKey);
         if (!validApiKey)
@@ -46,7 +46,7 @@ public class UrlController : ControllerBase
         return Ok();
     }
 
-    [HttpPost("get")]
+    [HttpGet("get")]
     public async Task<IActionResult> Get([FromHeader(Name = "x-api-key")] Guid apiKey, [FromQuery] int limit = IRepository.DEFAULT_URLS_SHOWN)
     {
         if (limit < 0 || limit > IRepository.LIMIT_URLS_SHOWN)

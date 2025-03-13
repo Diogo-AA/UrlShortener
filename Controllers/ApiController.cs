@@ -15,8 +15,8 @@ namespace UrlShortener.Controllers
             _repository = repository;
         }
 
-        [HttpPost("get")]
-        public async Task<IActionResult> Get([FromBody] User userRequest, [FromQuery] bool? updateIfExpired)
+        [HttpPost("create")]
+        public async Task<IActionResult> Create([FromBody] User userRequest, [FromQuery] bool? updateIfExpired)
         {
             bool validCredentials = await _repository.VerifyUser(userRequest);
             if (!validCredentials)
@@ -35,7 +35,7 @@ namespace UrlShortener.Controllers
             return Ok(apiKey.Value);
         }
 
-        [HttpPost("update")]
+        [HttpPatch("update")]
         public async Task<IActionResult> Update([FromBody] User userRequest)
         {
             bool validCredentials = await _repository.VerifyUser(userRequest);

@@ -29,7 +29,7 @@ public class UserController : ControllerBase
         return Ok($"User created succesfully. Your API Key is: {apiKey.Value}");
     }
 
-    [HttpPost("update-password")]
+    [HttpPatch("update-password")]
     public async Task<IActionResult> UpdatePassword([FromBody] User userRequest)
     {
         bool passwordUpdated = await _repository.UpdateUserPassword(userRequest);
@@ -39,8 +39,8 @@ public class UserController : ControllerBase
         return Ok();
     }
 
-    [HttpPost("remove")]
-    public async Task<IActionResult> Remove([FromBody] User userRequest)
+    [HttpDelete("delete")]
+    public async Task<IActionResult> Delete([FromBody] User userRequest)
     {
         bool validCredentials = await _repository.VerifyUser(userRequest);
         if (!validCredentials)
