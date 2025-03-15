@@ -33,15 +33,15 @@ public class UrlController : ControllerBase
     }
 
     [HttpDelete("delete")]
-    public async Task<IActionResult> Delete([FromHeader(Name = "x-api-key")] Guid apiKey, [FromBody] string url)
+    public async Task<IActionResult> Delete([FromHeader(Name = "x-api-key")] Guid apiKey, [FromBody] string shortedUrlId)
     {
         bool validApiKey = await _repository.ValidateApiKey(apiKey);
         if (!validApiKey)
             return BadRequest("Invalid or expired API Key.");
 
-        bool removed = await _repository.RemoveUrl(apiKey, url);
+        bool removed = await _repository.RemoveUrl(apiKey, shortedUrlId);
         if (!removed)
-            return Problem("Error removing the shorted url. Try again later.");
+            return BadRequest("Shorted url id not found.");
 
         return Ok();
     }
