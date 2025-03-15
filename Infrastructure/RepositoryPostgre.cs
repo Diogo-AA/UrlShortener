@@ -17,6 +17,7 @@ public class RepositoryPostgre : IRepository
             throw new Exception("Error: Couldn't connect to the database");
     }
 
+    #region Initialization functions
     public void Initialize()
     {
         InitializeUsersTable();
@@ -117,6 +118,8 @@ public class RepositoryPostgre : IRepository
 
         cmd.ExecuteNonQuery();
     }
+
+    #endregion
 
     #region Users functions
 
