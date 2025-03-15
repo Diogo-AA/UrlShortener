@@ -4,7 +4,7 @@ using UrlShortener.Infrastructure;
 namespace UrlShortener.Controllers;
 
 [ApiController]
-[Route("url")]
+[Route("api/url")]
 public class UrlController : ControllerBase
 {
     private readonly IRepository _repository;

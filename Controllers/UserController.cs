@@ -5,7 +5,7 @@ using UrlShortener.Models;
 namespace UrlShortener.Controllers;
 
 [ApiController]
-[Route("user")]
+[Route("api/user")]
 public class UserController : ControllerBase
 {
     private readonly IRepository _repository;

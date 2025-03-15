@@ -4,18 +4,18 @@ using UrlShortener.Models;
 
 namespace UrlShortener.Controllers
 {
-    [Route("api")]
+    [Route("api/api-key")]
     [ApiController]
-    public class ApiController : ControllerBase
+    public class ApiKeyController : ControllerBase
     {
         private readonly IRepository _repository;
 
-        public ApiController(IRepository repository)
+        public ApiKeyController(IRepository repository)
         {
             _repository = repository;
         }
 
-        [HttpPost("get-api-key")]
+        [HttpPost("get")]
         public async Task<IActionResult> GetApiKey([FromBody] User userRequest, [FromQuery] bool? updateIfExpired)
         {
             bool validCredentials = await _repository.VerifyUser(userRequest);
