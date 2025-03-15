@@ -23,6 +23,7 @@ public class RepositoryPostgre : IRepository
         InitializeUsersTable();
         InitializeApiKeysTable();
         InitializeUrlsTable();
+        InitializeErrorsTable();
     }
 
     private void InitializeUsersTable()
@@ -113,6 +114,28 @@ public class RepositoryPostgre : IRepository
             TABLESPACE pg_default;
 
             ALTER TABLE IF EXISTS public."Urls"
+                OWNER to postgres;
+        """, conn);
+
+        cmd.ExecuteNonQuery();
+    }
+
+    private void InitializeErrorsTable()
+    {
+        using var conn = dataSource.OpenConnection();
+        using var cmd = new NpgsqlCommand("""
+            CREATE TABLE IF NOT EXISTS public."Errors"
+            (
+                "traceId" TEXT PRIMARY KEY,
+                endpoint TEXT NOT NULL,
+                message TEXT NOT NULL,
+                "stackTrace" TEXT,
+                "timeOfOccurrence" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+
+            TABLESPACE pg_default;
+
+            ALTER TABLE IF EXISTS public."Errors"
                 OWNER to postgres;
         """, conn);
 
@@ -684,6 +707,43 @@ public class RepositoryPostgre : IRepository
         catch
         {
             throw;
+        }
+    }
+
+    #endregion
+
+    #region Logs functions
+    public async Task<bool> LogError(string traceId, string endpoint, Exception exception)
+    {
+        using var conn = await dataSource.OpenConnectionAsync();
+        using var transaction = await conn.BeginTransactionAsync();
+
+        try
+        {
+            string sql = """
+                INSERT INTO "Errors" ("traceId", endpoint, message, "stackTrace") 
+                VALUES (@traceId, @endpoint, @message, @stackTrace)
+                """;
+            await using var cmd = new NpgsqlCommand(sql, conn, transaction);
+
+            cmd.Parameters.AddWithValue("traceId", traceId);
+            cmd.Parameters.AddWithValue("endpoint", endpoint);
+            cmd.Parameters.AddWithValue("message", exception.Message);
+            cmd.Parameters.AddWithValue("stackTrace", exception.StackTrace is null ? "" : exception.StackTrace);
+
+            int rowsAdded = await cmd.ExecuteNonQueryAsync();
+            if (rowsAdded != 1)
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
+            await transaction.CommitAsync();
+            return true;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            return false;
         }
     }
 

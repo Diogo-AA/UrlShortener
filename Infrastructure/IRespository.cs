@@ -24,4 +24,5 @@ public interface IRepository
     Task<string?> GetOriginalUrl(Guid userId, string shortedUrlId);
     Task<bool> RemoveUrl(Guid apiKey, string shortedUrlId);
     Task<IEnumerable<Url>> GetAllUrlsFromUser(Guid apiKey, int limit);
+    Task<bool> LogError(string traceId, string endpoint, Exception exception);
 }
