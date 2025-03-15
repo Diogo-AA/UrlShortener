@@ -2,9 +2,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace UrlShortener.Controllers
 {
-    [ApiExplorerSettings(IgnoreApi = true)]
+    [NonController]
     public class ErrorController : ControllerBase
     {
+        [ApiExplorerSettings(IgnoreApi = true)]
         [Route("/error")]
         public IActionResult HandleError() => Problem();
     }
