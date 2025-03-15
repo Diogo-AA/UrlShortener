@@ -4,7 +4,6 @@ using UrlShortener.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-string connectionStringKey;
 if (builder.Environment.IsDevelopment())
 {
     builder.WebHost.ConfigureKestrel(options =>
@@ -14,17 +13,11 @@ if (builder.Environment.IsDevelopment())
             httpsOptions.ServerCertificate = X509CertificateLoader.LoadPkcs12FromFile("/https/aspnetapp.pfx", null);
         });
     });
-
-    connectionStringKey = "ConnectionStrings:DevConnection";
-}
-else
-{
-    connectionStringKey = "ConnectionStrings:ProdConnection";
 }
 
 builder.Services.AddScoped<IRepository, RepositoryPostgre>(sp =>
 {
-    string? connectionString = builder.Configuration[connectionStringKey];
+    string? connectionString = builder.Configuration["ConnectionStrings:PostgresConnection"];
     if (string.IsNullOrEmpty(connectionString))
         throw new ArgumentException("Error: Connection string cannot be null or empty");
     return new RepositoryPostgre(connectionString);
