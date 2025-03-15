@@ -32,6 +32,10 @@ public class UserController : ControllerBase
     [HttpPatch("update-password")]
     public async Task<IActionResult> UpdatePassword([FromBody] User userRequest)
     {
+        bool validCredentials = await _repository.VerifyUser(userRequest);
+        if (!validCredentials)
+            return BadRequest("Username or password incorrect.");
+            
         bool passwordUpdated = await _repository.UpdateUserPassword(userRequest);
         if (!passwordUpdated)
             return StatusCode(StatusCodes.Status500InternalServerError, "Error updating the password. Make sure you use the right password.");
