@@ -14,6 +14,10 @@ if (builder.Environment.IsDevelopment())
         });
     });
 }
+else
+{
+    builder.Services.AddExceptionHandler<CustomExceptionHandler>();
+}
 
 builder.Services.AddScoped<IRepository, RepositoryPostgre>(sp =>
 {
@@ -26,7 +30,6 @@ builder.Services.AddScoped<IRepository, RepositoryPostgre>(sp =>
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi();
-builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 
 var app = builder.Build();
 
@@ -39,6 +42,7 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseDeveloperExceptionPage();
 }
 else
 {
