@@ -15,8 +15,8 @@ namespace UrlShortener.Controllers
             _repository = repository;
         }
 
-        [HttpPost("create")]
-        public async Task<IActionResult> Create([FromBody] User userRequest, [FromQuery] bool? updateIfExpired)
+        [HttpPost("get-api-key")]
+        public async Task<IActionResult> GetApiKey([FromBody] User userRequest, [FromQuery] bool? updateIfExpired)
         {
             bool validCredentials = await _repository.VerifyUser(userRequest);
             if (!validCredentials)
