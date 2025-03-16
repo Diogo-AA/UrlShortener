@@ -15,7 +15,7 @@ namespace UrlShortener.Controllers
             _repository = repository;
         }
 
-        [HttpGet("{shortedUrlId}")]
+        [HttpGet("{shortedUrlId:minlength(6)}")]
         [AllowAnonymous]
         public async Task<IActionResult> Get(string shortedUrlId)
         {
