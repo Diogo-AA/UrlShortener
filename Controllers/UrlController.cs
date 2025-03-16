@@ -1,10 +1,14 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UrlShortener.Infrastructure;
+using UrlShortener.Policies.Options;
 
 namespace UrlShortener.Controllers;
 
 [ApiController]
 [Route("api/url")]
+[Authorize(Policy = ApiKeyAuthenticationOptions.DefaultPolicy)]
 public class UrlController : ControllerBase
 {
     private readonly IRepository _repository;
@@ -15,15 +19,13 @@ public class UrlController : ControllerBase
     }
 
     [HttpPost("create")]
-    public async Task<IActionResult> Create([FromHeader(Name = "x-api-key")] Guid apiKey, [FromBody] Uri url)
+    public async Task<IActionResult> Create([FromBody] Uri url)
     {
         bool validUrl = Models.Url.IsValidUrl(url);
         if (!validUrl)
             return BadRequest("Invalid url.");
 
-        bool validApiKey = await _repository.ValidateApiKey(apiKey);
-        if (!validApiKey)
-            return BadRequest("Invalid or expired API Key.");
+        Guid apiKey = GetApiKeyFromClaims();
 
         string? shortedUrl = await _repository.CreateShortedUrl(apiKey, url);
         if (string.IsNullOrEmpty(shortedUrl))
@@ -33,11 +35,9 @@ public class UrlController : ControllerBase
     }
 
     [HttpDelete("delete")]
-    public async Task<IActionResult> Delete([FromHeader(Name = "x-api-key")] Guid apiKey, [FromBody] string shortedUrlId)
+    public async Task<IActionResult> Delete([FromBody] string shortedUrlId)
     {
-        bool validApiKey = await _repository.ValidateApiKey(apiKey);
-        if (!validApiKey)
-            return BadRequest("Invalid or expired API Key.");
+        Guid apiKey = GetApiKeyFromClaims();
 
         bool removed = await _repository.RemoveUrl(apiKey, shortedUrlId);
         if (!removed)
@@ -47,17 +47,23 @@ public class UrlController : ControllerBase
     }
 
     [HttpGet("get")]
-    public async Task<IActionResult> Get([FromHeader(Name = "x-api-key")] Guid apiKey, [FromQuery] int limit = IRepository.DEFAULT_URLS_SHOWN)
+    public async Task<IActionResult> Get([FromQuery] int limit = IRepository.DEFAULT_URLS_SHOWN)
     {
         if (limit < 0 || limit > IRepository.LIMIT_URLS_SHOWN)
             return BadRequest($"The limit of the results shown must be between 0 and {IRepository.LIMIT_URLS_SHOWN}");
 
-        bool validApiKey = await _repository.ValidateApiKey(apiKey);
-        if (!validApiKey)
-            return BadRequest("Invalid or expired API Key.");
+        Guid apiKey = GetApiKeyFromClaims();
 
         var urls = await _repository.GetAllUrlsFromUser(apiKey, limit);
 
         return Ok(urls);
+    }
+
+    private Guid GetApiKeyFromClaims()
+    {
+        var claim = User.Claims.Where(claim => claim.Type == ApiKeyAuthenticationOptions.HeaderName).FirstOrDefault();
+        if (!Guid.TryParse(claim?.Value, out Guid apiKey))
+            throw new AuthenticationFailureException("Error getting the API key");
+        return apiKey;
     }
 }

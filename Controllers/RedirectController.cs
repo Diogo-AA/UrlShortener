@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UrlShortener.Infrastructure;
 
@@ -15,6 +16,7 @@ namespace UrlShortener.Controllers
         }
 
         [HttpGet("{shortedUrlId}")]
+        [AllowAnonymous]
         public async Task<IActionResult> Get(string shortedUrlId)
         {
             string? url = await _repository.GetOriginalUrl(shortedUrlId);

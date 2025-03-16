@@ -14,6 +14,7 @@ public interface IRepository
     Task<Guid?> CreateUser(User user);
     Task<bool> UpdateUserPassword(User user);
     Task<bool> VerifyUser(User user);
+    Task<bool> RemoveUser(Guid userId);
     Task<bool> RemoveUser(string username);
     Task<DateTime?> GetLastTimeApiKeyUpdated(Guid userId);
     Task<Guid?> UpdateApiKey(Guid userId);

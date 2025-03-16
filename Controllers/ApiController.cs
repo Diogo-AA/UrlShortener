@@ -1,11 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using UrlShortener.Infrastructure;
 using UrlShortener.Models;
+using UrlShortener.Policies.Options;
 
 namespace UrlShortener.Controllers
 {
     [Route("api/api-key")]
     [ApiController]
+    [Authorize(Policy = UserAndPasswordAuthenticationOptions.DefaultPolicy)]
     public class ApiKeyController : ControllerBase
     {
         private readonly IRepository _repository;
@@ -16,40 +20,36 @@ namespace UrlShortener.Controllers
         }
 
         [HttpPost("get")]
-        public async Task<IActionResult> GetApiKey([FromBody] User userRequest, [FromQuery] bool? updateIfExpired)
+        public async Task<IActionResult> GetApiKey([FromQuery] bool? updateIfExpired)
         {
-            bool validCredentials = await _repository.VerifyUser(userRequest);
-            if (!validCredentials)
-                return BadRequest("Username or password incorrect.");
+            var userId = GetUserIdFromClaims();
 
-            Guid? apiKey = await _repository.GetApiKey(userRequest.Id);
+            Guid? apiKey = await _repository.GetApiKey(userId);
             if (!apiKey.HasValue && !updateIfExpired.GetValueOrDefault())
             {
                 return Ok("API Key expired. Update your API Key using the 'update' endpoint or defining the parameter 'updateIfExpired' to true.");
             }
             else if (!apiKey.HasValue)
             {
-                return await UpdateApiKey(userRequest.Id);
+                return await UpdateApiKey(userId);
             }
 
             return Ok(apiKey.Value);
         }
 
         [HttpPatch("update")]
-        public async Task<IActionResult> Update([FromBody] User userRequest)
+        public async Task<IActionResult> Update()
         {
-            bool validCredentials = await _repository.VerifyUser(userRequest);
-            if (!validCredentials)
-                return BadRequest("Username or password incorrect.");
+            var userId = GetUserIdFromClaims();
 
-            DateTime? lastUpdated = await _repository.GetLastTimeApiKeyUpdated(userRequest.Id);
+            DateTime? lastUpdated = await _repository.GetLastTimeApiKeyUpdated(userId);
             if (!lastUpdated.HasValue)
                 return Problem("Error updating the API Key. Try again later.");
 
             if (DateTime.Now.Subtract(lastUpdated.Value).Minutes <= ApiKey.MAX_MINUTES_BETWEEN_UPDATES)
                 return StatusCode(StatusCodes.Status429TooManyRequests, "API Key changed recently. Wait a few minutes before updating again.");
 
-            return await UpdateApiKey(userRequest.Id);
+            return await UpdateApiKey(userId);
         }
 
         private async Task<IActionResult> UpdateApiKey(Guid userId)
@@ -59,6 +59,14 @@ namespace UrlShortener.Controllers
                 return Problem("Error updating the API Key. Try again later.");
 
             return Ok(apiKey.Value);
+        }
+
+        private Guid GetUserIdFromClaims()
+        {
+            var claim = User.Claims.Where(claim => claim.Type == "userId").FirstOrDefault();
+            if (!Guid.TryParse(claim?.Value, out Guid userId))
+                throw new AuthenticationFailureException("Error getting the userId");
+            return userId;
         }
     }
 }

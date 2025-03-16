@@ -15,6 +15,7 @@ services:
       - ConnectionStrings__PostgresConnection=Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD};
     volumes:
       - ${HTTPS_CERTIFICATE_PATH}:/https/aspnetapp.pfx:/https/
+      - dataprotection-keys:/app/keys
     networks:
       - aspnetcore-network
   postgres:
@@ -36,3 +37,6 @@ services:
 networks:
   aspnetcore-network:
     driver: bridge
+
+volumes:
+  dataprotection-keys:

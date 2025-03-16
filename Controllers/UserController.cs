@@ -1,11 +1,15 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UrlShortener.Infrastructure;
 using UrlShortener.Models;
+using UrlShortener.Policies.Options;
 
 namespace UrlShortener.Controllers;
 
 [ApiController]
 [Route("api/user")]
+[Authorize(Policy = UserAndPasswordAuthenticationOptions.DefaultPolicy)]
 public class UserController : ControllerBase
 {
     private readonly IRepository _repository;
@@ -16,6 +20,7 @@ public class UserController : ControllerBase
     }
 
     [HttpPost("create")]
+    [AllowAnonymous]
     public async Task<IActionResult> Create([FromBody] User userRequest)
     {
         bool isUsernameInUse = await _repository.IsUsernameInUse(userRequest.Username!);
@@ -30,13 +35,12 @@ public class UserController : ControllerBase
     }
 
     [HttpPatch("update-password")]
-    public async Task<IActionResult> UpdatePassword([FromBody] User userRequest)
+    public async Task<IActionResult> UpdatePassword()
     {
-        bool validCredentials = await _repository.VerifyUser(userRequest);
-        if (!validCredentials)
-            return BadRequest("Username or password incorrect.");
+        Guid userId = GetUserIdFromClaims();
+        string? newPassword = GetNewPasswordFromClaims();
             
-        bool passwordUpdated = await _repository.UpdateUserPassword(userRequest);
+        bool passwordUpdated = await _repository.UpdateUserPassword(new Models.User() { Id = userId, NewPassword = newPassword });
         if (!passwordUpdated)
             return StatusCode(StatusCodes.Status500InternalServerError, "Error updating the password. Make sure you use the right password.");
 
@@ -44,16 +48,28 @@ public class UserController : ControllerBase
     }
 
     [HttpDelete("delete")]
-    public async Task<IActionResult> Delete([FromBody] User userRequest)
+    public async Task<IActionResult> Delete()
     {
-        bool validCredentials = await _repository.VerifyUser(userRequest);
-        if (!validCredentials)
-            return BadRequest("Username or password incorrect.");
-
-        bool userRemoved = await _repository.RemoveUser(userRequest.Username!);
+        Guid userId = GetUserIdFromClaims();
+        
+        bool userRemoved = await _repository.RemoveUser(userId);
         if (!userRemoved)
             return StatusCode(StatusCodes.Status500InternalServerError, "Error removing the user. Try again later.");
 
         return Ok();
+    }
+
+    private Guid GetUserIdFromClaims()
+    {
+        var claim = User.Claims.Where(claim => claim.Type == "userId").FirstOrDefault();
+        if (!Guid.TryParse(claim?.Value, out Guid userId))
+            throw new AuthenticationFailureException("Error getting the userId");
+        return userId;
+    }
+
+    private string? GetNewPasswordFromClaims()
+    {
+        var claim = User.Claims.Where(claim => claim.Type == "newPassword").FirstOrDefault();
+        return claim?.Value;
     }
 }

@@ -285,13 +285,13 @@ public class RepositoryPostgre : IRepository
             string sql = """
                 UPDATE "Users"
                 SET password = @password
-                WHERE username = @username
+                WHERE id = @id
                 """;
             await using var cmd = new NpgsqlCommand(sql, conn, transaction);
 
             string newHashedPassword = Cryptography.HashPassword(user.NewPassword!);
 
-            cmd.Parameters.AddWithValue("username", user.Username!);
+            cmd.Parameters.AddWithValue("id", user.Id);
             cmd.Parameters.AddWithValue("password", newHashedPassword);
 
             int numRowsUpdated = await cmd.ExecuteNonQueryAsync();
@@ -339,6 +339,32 @@ public class RepositoryPostgre : IRepository
         catch
         {
             throw;
+        }
+    }
+
+    public async Task<bool> RemoveUser(Guid userId)
+    {
+        using var conn = await dataSource.OpenConnectionAsync();
+        using var transaction = await conn.BeginTransactionAsync();
+
+        try
+        {
+            string sql = """
+                DELETE FROM "Users"
+                WHERE id = @id
+                """;
+            await using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("id", userId);
+
+            int rowsModified = await cmd.ExecuteNonQueryAsync();
+            transaction.Commit();
+
+            return rowsModified == 1;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            return false;
         }
     }
 
