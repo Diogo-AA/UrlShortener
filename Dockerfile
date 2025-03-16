@@ -6,6 +6,7 @@ WORKDIR /source
 COPY *.sln .
 COPY *.csproj ./
 
+RUN dotnet clean
 RUN dotnet restore
 
 # copy everything else and build app
