@@ -1,12 +1,22 @@
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
 namespace UrlShortener.Controllers
 {
-    [NonController]
+    [ApiController]
     public class ErrorController : ControllerBase
     {
         [ApiExplorerSettings(IgnoreApi = true)]
         [Route("/error")]
-        public IActionResult HandleError() => Problem();
+        public IActionResult HandleError()
+        {
+            var exceptionHandlerFeature = HttpContext.Features.Get<IExceptionHandlerFeature>();
+            if (exceptionHandlerFeature == null)
+            {
+                return NotFound();
+            }
+
+            return Problem();
+        }
     }
 }
