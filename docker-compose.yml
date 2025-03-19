@@ -1,23 +1,42 @@
 services:
-  url-shortener:
+  url-shortener-https:
     image: ${DOCKER_REGISTRY-}url-shortener
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "5094:80"
-      - "7262:443"
     environment:
+      - USE_HTTPS=true
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
-      - ASPNETCORE_URLS=https://+:443;http://+:80
       - ASPNETCORE_HTTPS_PORT=7262
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
       - ConnectionStrings__PostgresConnection=Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD};
+    ports:
+      - "5094:80"
+      - "7262:443"
     volumes:
-      - ${HTTPS_CERTIFICATE_PATH}:/https/aspnetapp.pfx:/https/
+      - ${HTTPS_CERTIFICATE_PATH:-/dev/null}:/https/aspnetapp.pfx:/https/
       - dataprotection-keys:/app/keys
     networks:
       - aspnetcore-network
+    profiles: [https]
+
+  url-shortener-http:
+    image: ${DOCKER_REGISTRY-}url-shortener
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - USE_HTTPS=false
+      - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
+      - ConnectionStrings__PostgresConnection=Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD};
+    ports:
+      - "5094:80"
+    volumes:
+      - dataprotection-keys:/app/keys
+    networks:
+      - aspnetcore-network
+    profiles: [http]
+
   postgres:
     image: postgres
     restart: always
@@ -33,6 +52,7 @@ services:
       retries: 5
     networks:
       - aspnetcore-network
+    profiles: [http, https]
 
 networks:
   aspnetcore-network:

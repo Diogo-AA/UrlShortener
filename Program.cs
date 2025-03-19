@@ -8,13 +8,12 @@ using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo("/app/keys"))
-    .ProtectKeysWithCertificate(X509CertificateLoader.LoadPkcs12FromFile("/https/aspnetapp.pfx", null)); //Temporary certificate for DataProtection
-    // Using the same certificate for DataProtection and Https is not a good practice for Production!
+bool useHttps = builder.Configuration.GetValue<bool>("USE_HTTPS");
 
-if (builder.Environment.IsDevelopment())
+if (useHttps)
 {
+    builder.WebHost.UseUrls(["http://+:80", "https://+:443"]);
+
     builder.WebHost.ConfigureKestrel(options =>
     {
         options.ConfigureHttpsDefaults(httpsOptions =>
@@ -22,8 +21,18 @@ if (builder.Environment.IsDevelopment())
             httpsOptions.ServerCertificate = X509CertificateLoader.LoadPkcs12FromFile("/https/aspnetapp.pfx", null);
         });
     });
+
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo("/app/keys"))
+        .ProtectKeysWithCertificate(X509CertificateLoader.LoadPkcs12FromFile("/https/aspnetapp.pfx", null)); //Temporary certificate for DataProtection
+        // Using the same certificate for DataProtection and Https is not a good practice for Production!
 }
 else
+{
+    builder.WebHost.UseUrls(["http://+:80"]);
+}
+
+if (!builder.Environment.IsDevelopment())
 {
     builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 }
@@ -79,7 +88,8 @@ else
 
 app.MapHealthChecks("/health");
 
-app.UseHttpsRedirection();
+if (useHttps)
+    app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
