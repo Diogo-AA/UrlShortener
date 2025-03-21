@@ -1,6 +1,6 @@
 using UrlShortener.Models;
 
-namespace UrlShortener.Infrastructure;
+namespace UrlShortener.Data;
 
 public interface IRepository
 {

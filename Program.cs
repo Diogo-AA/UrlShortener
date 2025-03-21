@@ -1,10 +1,10 @@
 using System.Security.Cryptography.X509Certificates;
-using UrlShortener.Infrastructure;
 using UrlShortener.Handlers;
 using UrlShortener.Policies.Handlers;
 using UrlShortener.Policies.Validation;
-using UrlShortener.Policies.Options;
+using UrlShortener.Options;
 using Microsoft.AspNetCore.DataProtection;
+using UrlShortener.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 

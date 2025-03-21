@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 
-namespace UrlShortener.Policies.Options;
+namespace UrlShortener.Options;
 
 public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
 {

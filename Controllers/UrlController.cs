@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UrlShortener.Infrastructure;
-using UrlShortener.Policies.Options;
+using UrlShortener.Data;
+using UrlShortener.Options;
 
 namespace UrlShortener.Controllers;
 

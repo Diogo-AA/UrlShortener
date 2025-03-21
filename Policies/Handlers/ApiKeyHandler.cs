@@ -1,10 +1,9 @@
-using System.Security.Authentication;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
-using UrlShortener.Policies.Options;
+using UrlShortener.Options;
 using UrlShortener.Policies.Validation;
 
 namespace UrlShortener.Policies.Handlers;

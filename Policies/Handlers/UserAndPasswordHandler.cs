@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using UrlShortener.Models;
-using UrlShortener.Policies.Options;
+using UrlShortener.Options;
 using UrlShortener.Policies.Validation;
 
 namespace UrlShortener.Policies.Handlers;

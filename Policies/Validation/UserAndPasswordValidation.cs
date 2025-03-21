@@ -1,4 +1,4 @@
-using UrlShortener.Infrastructure;
+using UrlShortener.Data;
 using UrlShortener.Models;
 
 namespace UrlShortener.Policies.Validation;

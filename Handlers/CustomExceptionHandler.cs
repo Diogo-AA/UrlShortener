@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics;
-using UrlShortener.Infrastructure;
+using UrlShortener.Data;
 
 namespace UrlShortener.Handlers;
 

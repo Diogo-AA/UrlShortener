@@ -3,7 +3,7 @@ using Npgsql;
 using UrlShortener.Models;
 using UrlShortener.Utils;
 
-namespace UrlShortener.Infrastructure;
+namespace UrlShortener.Data;
 
 public class RepositoryPostgre : IRepository
 {
