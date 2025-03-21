@@ -1,4 +1,4 @@
-using System.Security.Authentication;
+﻿using System.Security.Authentication;
 using Npgsql;
 using UrlShortener.Models;
 using UrlShortener.Utils;
@@ -149,92 +149,71 @@ public class RepositoryPostgre : IRepository
 
     public async Task<User?> GetUser(string username)
     {
-        try
+        using var conn = await dataSource.OpenConnectionAsync();
+
+        string sql = """
+            SELECT id, username
+            FROM "Users"
+            WHERE username = @username
+            LIMIT 1
+            """;
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("username", username);
+
+        using var reader = await cmd.ExecuteReaderAsync();
+        if (!reader.HasRows)
+            return null;
+
+        await reader.ReadAsync();
+
+        return new User 
         {
-            using var conn = await dataSource.OpenConnectionAsync();
-
-            string sql = """
-                SELECT id, username
-                FROM "Users"
-                WHERE username = @username
-                LIMIT 1
-                """;
-            await using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("username", username);
-
-            using var reader = await cmd.ExecuteReaderAsync();
-            if (!reader.HasRows)
-                return null;
-
-            await reader.ReadAsync();
-
-            return new User 
-            {
-                Id = reader.GetGuid(0), 
-                Username = reader.GetString(1)
-            };
-        }
-        catch
-        {
-            throw;
-        }
+            Id = reader.GetGuid(0), 
+            Username = reader.GetString(1)
+        };
     }
 
     public async Task<User?> GetUser(Guid apiKey)
     {
-        try
+        using var conn = await dataSource.OpenConnectionAsync();
+
+        string sql = """
+            SELECT u.id, username
+            FROM "Users" u
+            INNER JOIN "ApiKeys" ON key = @apiKey
+            LIMIT 1
+            """;
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("apiKey", apiKey);
+
+        using var reader = await cmd.ExecuteReaderAsync();
+        if (!reader.HasRows)
+            return null;
+
+        await reader.ReadAsync();
+
+        return new User
         {
-            using var conn = await dataSource.OpenConnectionAsync();
-
-            string sql = """
-                SELECT u.id, username
-                FROM "Users" u
-                INNER JOIN "ApiKeys" ON key = @apiKey
-                LIMIT 1
-                """;
-            await using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("apiKey", apiKey);
-
-            using var reader = await cmd.ExecuteReaderAsync();
-            if (!reader.HasRows)
-                return null;
-
-            await reader.ReadAsync();
-
-            return new User
-            {
-                Id = reader.GetGuid(0),
-                Username = reader.GetString(1)
-            };
-        }
-        catch
-        {
-            throw;
-        }
+            Id = reader.GetGuid(0),
+            Username = reader.GetString(1)
+        };
     }
 
     public async Task<bool> IsUsernameInUse(string username)
     {
-        try
-        {
-            using var conn = await dataSource.OpenConnectionAsync();
+        using var conn = await dataSource.OpenConnectionAsync();
 
-            string sql = """
-                SELECT username
-                FROM "Users"
-                WHERE username = @username
-                LIMIT 1
-                """;
-            await using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("username", username);
+        string sql = """
+            SELECT username
+            FROM "Users"
+            WHERE username = @username
+            LIMIT 1
+            """;
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("username", username);
 
-            using var reader = await cmd.ExecuteReaderAsync();
-            return reader.HasRows;
-        }
-        catch
-        {
-            throw;
-        }
+        using var reader = await cmd.ExecuteReaderAsync();
+        return reader.HasRows;
     }
 
     public async Task<Guid?> CreateUser(User user)
@@ -314,33 +293,26 @@ public class RepositoryPostgre : IRepository
 
     public async Task<bool> VerifyUser(User user)
     {
-        try
-        {
-            using var conn = await dataSource.OpenConnectionAsync();
+        using var conn = await dataSource.OpenConnectionAsync();
 
-            string sql = """
-                SELECT id, password
-                FROM "Users"
-                WHERE username = @username
-                LIMIT 1
-                """;
-            await using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("username", user.Username!);
+        string sql = """
+            SELECT id, password
+            FROM "Users"
+            WHERE username = @username
+            LIMIT 1
+            """;
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("username", user.Username!);
 
-            using var reader = await cmd.ExecuteReaderAsync();
+        using var reader = await cmd.ExecuteReaderAsync();
 
-            if (!reader.HasRows)
-                return false;
+        if (!reader.HasRows)
+            return false;
 
-            await reader.ReadAsync();
-            user.Id = reader.GetGuid(0);
-            string hashedPassword = reader.GetString(1);
-            return Cryptography.VerifyPassword(user.Password!, hashedPassword);
-        }
-        catch
-        {
-            throw;
-        }
+        await reader.ReadAsync();
+        user.Id = reader.GetGuid(0);
+        string hashedPassword = reader.GetString(1);
+        return Cryptography.VerifyPassword(user.Password!, hashedPassword);
     }
 
     public async Task<bool> RemoveUser(Guid userId)
@@ -429,30 +401,23 @@ public class RepositoryPostgre : IRepository
 
     public async Task<DateTime?> GetLastTimeApiKeyUpdated(Guid userId)
     {
-        try
-        {
-            using var conn = await dataSource.OpenConnectionAsync();
+        using var conn = await dataSource.OpenConnectionAsync();
 
-            string sql = """
-                SELECT "lastUpdated"
-                FROM "ApiKeys"
-                WHERE "userId" = @userId
-                LIMIT 1
-                """;
-            await using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("userId", userId);
+        string sql = """
+            SELECT "lastUpdated"
+            FROM "ApiKeys"
+            WHERE "userId" = @userId
+            LIMIT 1
+            """;
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("userId", userId);
 
-            using var reader = await cmd.ExecuteReaderAsync();
-            if (!reader.HasRows)
-                return null;
+        using var reader = await cmd.ExecuteReaderAsync();
+        if (!reader.HasRows)
+            return null;
 
-            await reader.ReadAsync();
-            return reader.GetDateTime(0);
-        }
-        catch
-        {
-            throw;
-        }
+        await reader.ReadAsync();
+        return reader.GetDateTime(0);
     }
 
     public async Task<Guid?> UpdateApiKey(Guid userId)
@@ -495,63 +460,49 @@ public class RepositoryPostgre : IRepository
 
     public async Task<Guid?> GetApiKey(Guid userId)
     {
-        try
-        {
-            using var conn = await dataSource.OpenConnectionAsync();
+        using var conn = await dataSource.OpenConnectionAsync();
 
-            string sql = """
-                SELECT key, "expirationDate"
-                FROM "ApiKeys"
-                WHERE "userId" = @userId
-                LIMIT 1
-                """;
-            await using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("userId", userId);
+        string sql = """
+            SELECT key, "expirationDate"
+            FROM "ApiKeys"
+            WHERE "userId" = @userId
+            LIMIT 1
+            """;
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("userId", userId);
 
-            using var reader = await cmd.ExecuteReaderAsync();
-            if (!reader.HasRows)
-                return null;
+        using var reader = await cmd.ExecuteReaderAsync();
+        if (!reader.HasRows)
+            return null;
 
-            await reader.ReadAsync();
-            var apiKey = reader.GetGuid(0);
-            var expirationDate = reader.GetDateTime(1);
+        await reader.ReadAsync();
+        var apiKey = reader.GetGuid(0);
+        var expirationDate = reader.GetDateTime(1);
 
-            return expirationDate >= DateTime.Now ? apiKey : null;
-        }
-        catch
-        {
-            throw;
-        }
+        return expirationDate >= DateTime.Now ? apiKey : null;
     }
 
     public async Task<bool> ValidateApiKey(Guid apiKey)
     {
-        try
-        {
-            using var conn = await dataSource.OpenConnectionAsync();
+        using var conn = await dataSource.OpenConnectionAsync();
 
-            string sql = """
-                SELECT "expirationDate"
-                FROM "ApiKeys"
-                WHERE key = @apiKey
-                LIMIT 1
-                """;
-            await using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("apiKey", apiKey);
+        string sql = """
+            SELECT "expirationDate"
+            FROM "ApiKeys"
+            WHERE key = @apiKey
+            LIMIT 1
+            """;
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("apiKey", apiKey);
 
-            using var reader = await cmd.ExecuteReaderAsync();
-            if (!reader.HasRows)
-                return false;
+        using var reader = await cmd.ExecuteReaderAsync();
+        if (!reader.HasRows)
+            return false;
 
-            await reader.ReadAsync();
-            var expirationDate = reader.GetDateTime(0);
+        await reader.ReadAsync();
+        var expirationDate = reader.GetDateTime(0);
 
-            return expirationDate >= DateTime.Now;
-        }
-        catch
-        {
-            throw;
-        }
+        return expirationDate >= DateTime.Now;
     }
 
     #endregion
@@ -599,59 +550,45 @@ public class RepositoryPostgre : IRepository
 
     public async Task<string?> GetOriginalUrl(string shortedUrlId)
     {
-        try
-        {
-            using var conn = await dataSource.OpenConnectionAsync();
+        using var conn = await dataSource.OpenConnectionAsync();
 
-            string sql = """
-                SELECT "originalUrl"
-                FROM "Urls"
-                WHERE "shortedUrl" = @shortedUrl
-                LIMIT 1
-                """;
-            await using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("shortedUrl", shortedUrlId);
+        string sql = """
+            SELECT "originalUrl"
+            FROM "Urls"
+            WHERE "shortedUrl" = @shortedUrl
+            LIMIT 1
+            """;
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("shortedUrl", shortedUrlId);
 
-            using var reader = await cmd.ExecuteReaderAsync();
-            if (!reader.HasRows)
-                return null;
+        using var reader = await cmd.ExecuteReaderAsync();
+        if (!reader.HasRows)
+            return null;
 
-            await reader.ReadAsync();
-            return reader.GetString(0);
-        }
-        catch
-        {
-            throw;
-        }
+        await reader.ReadAsync();
+        return reader.GetString(0);
     }
 
     public async Task<string?> GetOriginalUrl(Guid userId, string shortedUrlId)
     {
-        try
-        {
-            using var conn = await dataSource.OpenConnectionAsync();
+        using var conn = await dataSource.OpenConnectionAsync();
 
-            string sql = """
-                SELECT "originalUrl"
-                FROM "Urls"
-                WHERE "userId" = @userId and "shortedUrl" = @shortedUrl
-                LIMIT 1
-                """;
-            await using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("userId", userId);
-            cmd.Parameters.AddWithValue("shortedUrl", shortedUrlId);
+        string sql = """
+            SELECT "originalUrl"
+            FROM "Urls"
+            WHERE "userId" = @userId and "shortedUrl" = @shortedUrl
+            LIMIT 1
+            """;
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("userId", userId);
+        cmd.Parameters.AddWithValue("shortedUrl", shortedUrlId);
 
-            using var reader = await cmd.ExecuteReaderAsync();
-            if (!reader.HasRows)
-                return null;
+        using var reader = await cmd.ExecuteReaderAsync();
+        if (!reader.HasRows)
+            return null;
 
-            await reader.ReadAsync();
-            return reader.GetString(0);
-        }
-        catch
-        {
-            throw;
-        }
+        await reader.ReadAsync();
+        return reader.GetString(0);
     }
 
     public async Task<bool> RemoveUrl(Guid apiKey, string shortedUrlId)
@@ -693,40 +630,33 @@ public class RepositoryPostgre : IRepository
     {
         User? user = await GetUser(apiKey) ?? throw new AuthenticationException("Couldn't get the user through the API Key");
 
-        try
+        using var conn = await dataSource.OpenConnectionAsync();
+
+        string sql = """
+            SELECT "shortedUrl", "originalUrl"
+            FROM "Urls"
+            WHERE "userId" = @userId
+            LIMIT @limit
+            """;
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("userId", user.Id);
+        cmd.Parameters.AddWithValue("limit", limit);
+
+        using var reader = await cmd.ExecuteReaderAsync();
+        if (!reader.HasRows)
+            return Enumerable.Empty<Url>();
+
+        var urls = new List<Url>();
+        while (await reader.ReadAsync())
         {
-            using var conn = await dataSource.OpenConnectionAsync();
-
-            string sql = """
-                SELECT "shortedUrl", "originalUrl"
-                FROM "Urls"
-                WHERE "userId" = @userId
-                LIMIT @limit
-                """;
-            await using var cmd = new NpgsqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("userId", user.Id);
-            cmd.Parameters.AddWithValue("limit", limit);
-
-            using var reader = await cmd.ExecuteReaderAsync();
-            if (!reader.HasRows)
-                return Enumerable.Empty<Url>();
-
-            var urls = new List<Url>();
-            while (await reader.ReadAsync())
+            urls.Add(new Url()
             {
-                urls.Add(new Url()
-                {
-                    ShortedUrl = reader.GetString(0),
-                    OriginalUrl = reader.GetString(1)
-                });
-            }
+                ShortedUrl = reader.GetString(0),
+                OriginalUrl = reader.GetString(1)
+            });
+        }
 
-            return urls;
-        }
-        catch
-        {
-            throw;
-        }
+        return urls;
     }
 
     #endregion
