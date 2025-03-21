@@ -15,6 +15,7 @@ services:
       - "7262:443"
     volumes:
       - ${HTTPS_CERTIFICATE_PATH:-/dev/null}:/https/aspnetapp.pfx:/https/
+      - ${DATA_PROTECTION_CERTIFICATE_PATH:-/dev/null}:/app/keys/datacert.pfx
       - dataprotection-keys:/app/keys
     networks:
       - aspnetcore-network

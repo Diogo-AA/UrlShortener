@@ -18,14 +18,15 @@ if (useHttps)
     {
         options.ConfigureHttpsDefaults(httpsOptions =>
         {
-            httpsOptions.ServerCertificate = X509CertificateLoader.LoadPkcs12FromFile("/https/aspnetapp.pfx", null);
+            httpsOptions.ServerCertificate = X509CertificateLoader.LoadPkcs12FromFile("/https/aspnetapp.pfx",
+                                                builder.Configuration.GetValue<string?>("PASSWORD_HTTPS_CERTIFICATE"));
         });
     });
 
     builder.Services.AddDataProtection()
         .PersistKeysToFileSystem(new DirectoryInfo("/app/keys"))
-        .ProtectKeysWithCertificate(X509CertificateLoader.LoadPkcs12FromFile("/https/aspnetapp.pfx", null)); //Temporary certificate for DataProtection
-        // Using the same certificate for DataProtection and Https is not a good practice for Production!
+        .ProtectKeysWithCertificate(X509CertificateLoader.LoadPkcs12FromFile("/app/keys/datacert.pfx",
+                                                builder.Configuration.GetValue<string?>("PASSWORD_DATA_PROTECTION_CERTIFICATE")));
 }
 else
 {
