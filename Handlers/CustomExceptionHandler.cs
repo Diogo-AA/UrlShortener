@@ -26,7 +26,7 @@ public class CustomExceptionHandler : IExceptionHandler
         string traceId = Activity.Current?.Id ?? httpContext.TraceIdentifier;
 
         await _repository.LogError(traceId, endpoint, exception);
-        _logger.LogError("Error occurred in {Endpoint} with traceId {TraceId} at {Time}", endpoint, traceId, DateTime.UtcNow);
+        _logger.LogError("Error occurred in '{Endpoint}' with traceId '{TraceId}' at '{Time}'", endpoint.ReplaceLineEndings(""), traceId, DateTime.UtcNow);
 
         return false;
     }
