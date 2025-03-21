@@ -40,10 +40,18 @@ if (!builder.Environment.IsDevelopment())
 
 builder.Services.AddScoped<IRepository, RepositoryPostgre>(sp =>
 {
-    string? connectionString = builder.Configuration["ConnectionStrings:PostgresConnection"];
-    if (string.IsNullOrEmpty(connectionString))
-        throw new ArgumentException("Error: Connection string cannot be null or empty");
-    return new RepositoryPostgre(connectionString);
+    string? postgresConnectionString = builder.Configuration["ConnectionStrings:PostgresConnection"];
+    if (string.IsNullOrEmpty(postgresConnectionString))
+        throw new ArgumentException("Error: Postgre connection string cannot be null or empty");
+    return new RepositoryPostgre(postgresConnectionString);
+});
+
+builder.Services.AddStackExchangeRedisCache(options => 
+{
+    string? redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection");
+    if (string.IsNullOrEmpty(redisConnectionString))
+            throw new ArgumentException("Error: Redis connection string cannot be null or empty");
+    options.Configuration = redisConnectionString;
 });
 
 builder.Services.AddScoped<IApiKeyValidation, ApiKeyValidation>();

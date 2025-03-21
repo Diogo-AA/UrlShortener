@@ -1,5 +1,7 @@
 services:
   url-shortener-https:
+    build: 
+      dockerfile: Dockerfile
     image: ${DOCKER_REGISTRY-}url-shortener
     depends_on:
       postgres:
@@ -10,6 +12,7 @@ services:
       - ASPNETCORE_HTTPS_PORT=7262
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
       - ConnectionStrings__PostgresConnection=Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD};
+      - ConnectionStrings__RedisConnection=redis:6379
     ports:
       - "5094:80"
       - "7262:443"
@@ -22,6 +25,8 @@ services:
     profiles: [https]
 
   url-shortener-http:
+    build: 
+        dockerfile: Dockerfile
     image: ${DOCKER_REGISTRY-}url-shortener
     depends_on:
       postgres:
@@ -30,6 +35,7 @@ services:
       - USE_HTTPS=false
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
       - ConnectionStrings__PostgresConnection=Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD};
+      - ConnectionStrings__RedisConnection=redis:6379
     ports:
       - "5094:80"
     volumes:
@@ -51,6 +57,21 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - aspnetcore-network
+    profiles: [http, https]
+
+  redis:
+    image: redis
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: ["redis-server"]
+    ports:
+      - '6379:6379'
     networks:
       - aspnetcore-network
     profiles: [http, https]
