@@ -1,4 +1,5 @@
-﻿using Npgsql;
+using System.Security.Authentication;
+using Npgsql;
 using UrlShortener.Models;
 using UrlShortener.Utils;
 
@@ -14,7 +15,7 @@ public class RepositoryPostgre : IRepository
                          .Build();
 
         if (dataSource is null)
-            throw new Exception("Error: Couldn't connect to the database");
+            throw new ArgumentException("Error: Couldn't connect to the database");
     }
 
     #region Initialization functions
@@ -559,11 +560,7 @@ public class RepositoryPostgre : IRepository
 
     public async Task<string?> CreateShortedUrl(Guid apiKey, Uri originalUrl)
     {
-        User? user = await GetUser(apiKey);
-        if (user is null)
-        {
-            return null;
-        }
+        User? user = await GetUser(apiKey) ?? throw new AuthenticationException("Couldn't get the user through the API Key");
 
         using var conn = await dataSource.OpenConnectionAsync();
         using var transaction = await conn.BeginTransactionAsync();
@@ -659,11 +656,7 @@ public class RepositoryPostgre : IRepository
 
     public async Task<bool> RemoveUrl(Guid apiKey, string shortedUrlId)
     {
-        User? user = await GetUser(apiKey);
-        if (user is null)
-        {
-            return false;
-        }
+        User? user = await GetUser(apiKey) ?? throw new AuthenticationException("Couldn't get the user through the API Key");
 
         using var conn = await dataSource.OpenConnectionAsync();
         using var transaction = await conn.BeginTransactionAsync();
@@ -698,7 +691,7 @@ public class RepositoryPostgre : IRepository
 
     public async Task<IEnumerable<Url>> GetAllUrlsFromUser(Guid apiKey, int limit)
     {
-        User? user = await GetUser(apiKey) ?? throw new Exception("Couldn't get the user through the API Key");
+        User? user = await GetUser(apiKey) ?? throw new AuthenticationException("Couldn't get the user through the API Key");
 
         try
         {
