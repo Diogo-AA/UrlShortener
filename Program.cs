@@ -85,6 +85,7 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/error");
+    app.UseHsts();
 }
 
 app.MapHealthChecks("/health");
