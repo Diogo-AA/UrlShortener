@@ -29,7 +29,7 @@ public class UserController : ControllerBase
 
         Guid? apiKey = await _repository.CreateUser(userRequest);
         if (!apiKey.HasValue)
-            return StatusCode(StatusCodes.Status500InternalServerError, "Error creating the user. Try again later.");
+            return Problem("Error creating the user. Try again later.");
 
         return Ok($"User created succesfully. Your API Key is: {apiKey.Value}");
     }
@@ -42,7 +42,7 @@ public class UserController : ControllerBase
             
         bool passwordUpdated = await _repository.UpdateUserPassword(new Models.User() { Id = userId, NewPassword = newPassword });
         if (!passwordUpdated)
-            return StatusCode(StatusCodes.Status500InternalServerError, "Error updating the password. Make sure you use the right password.");
+            return Problem("Error updating the password. Make sure you use the right password.");
 
         return Ok();
     }
@@ -54,7 +54,7 @@ public class UserController : ControllerBase
         
         bool userRemoved = await _repository.RemoveUser(userId);
         if (!userRemoved)
-            return StatusCode(StatusCodes.Status500InternalServerError, "Error removing the user. Try again later.");
+            return Problem("Error removing the user. Try again later.");
 
         return Ok();
     }
