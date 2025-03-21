@@ -29,9 +29,6 @@ public class ApiKeyHandler : AuthenticationHandler<ApiKeyAuthenticationOptions>
         if (!headerExists.GetValueOrDefault())
             return AuthenticateResult.Fail($"Header: '{ApiKeyAuthenticationOptions.HeaderName}' not found.");
 
-        if (string.IsNullOrWhiteSpace(apiKey))
-            return AuthenticateResult.Fail("API key cannot be empty");
-
         bool isValidApiKey = await _apiKeyValidation.IsValidApiKey(apiKey!);        
         if (!isValidApiKey)
             return AuthenticateResult.Fail("Invalid or expired API key");
@@ -41,7 +38,7 @@ public class ApiKeyHandler : AuthenticationHandler<ApiKeyAuthenticationOptions>
             new(ApiKeyAuthenticationOptions.HeaderName, apiKey!)
         };
         var claimsIdentity = new ClaimsIdentity(claims, this.Scheme.Name);
-        var claimsPrincipal = new ClaimsPrincipal (claimsIdentity);
+        var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
         return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(claimsPrincipal), this.Scheme.Name));
     }
