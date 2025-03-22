@@ -36,7 +36,7 @@ public class ApiKeyHandler : AuthenticationHandler<ApiKeyAuthenticationOptions>
         {
             new(ApiKeyAuthenticationOptions.HeaderName, apiKey!)
         };
-        var claimsIdentity = new ClaimsIdentity(claims, this.Scheme.Name);
+        var claimsIdentity = new ClaimsIdentity(claims, this.Scheme.Name, ApiKeyAuthenticationOptions.HeaderName, ClaimTypes.Role);
         var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
         return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(claimsPrincipal), this.Scheme.Name));

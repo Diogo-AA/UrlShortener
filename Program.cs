@@ -5,6 +5,8 @@ using UrlShortener.Policies.Validation;
 using UrlShortener.Options;
 using Microsoft.AspNetCore.DataProtection;
 using UrlShortener.Data;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,7 +52,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
 {
     string? redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection");
     if (string.IsNullOrEmpty(redisConnectionString))
-            throw new ArgumentException("Error: Redis connection string cannot be null or empty");
+        throw new ArgumentException("Error: Redis connection string cannot be null or empty");
     options.Configuration = redisConnectionString;
 });
 
@@ -72,6 +74,28 @@ builder.Services.AddAuthorizationBuilder()
         policy.RequireAuthenticatedUser();
         policy.AddAuthenticationSchemes(UserAndPasswordAuthenticationOptions.DefaultScheme);
     });
+
+builder.Services.AddRateLimiter(options => 
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext => 
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.User.Identity?.Name ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = RateLimitingOptions.PERMIT_LIMIT,
+                QueueLimit = RateLimitingOptions.QUEUE_LIMIT,
+                Window = TimeSpan.FromSeconds(RateLimitingOptions.WINDOW_SECONDS)
+            }));
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.HttpContext.Response.Headers.RetryAfter = RateLimitingOptions.WINDOW_SECONDS.ToString();
+
+        await context.HttpContext.Response.WriteAsync("Rate limit exceeded. Please try again later.", cancellationToken);
+    };
+});
 
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
@@ -101,8 +125,15 @@ app.MapHealthChecks("/health");
 if (useHttps)
     app.UseHttpsRedirection();
 
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseRateLimiter();
 
 app.MapControllers();
 

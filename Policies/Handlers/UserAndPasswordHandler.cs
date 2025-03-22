@@ -44,7 +44,7 @@ public class UserAndPasswordHandler : AuthenticationHandler<UserAndPasswordAuthe
             new("userId", user!.Id.ToString()),
             new("newPassword", user!.NewPassword ?? "")
         };
-        var claimsIdentity = new ClaimsIdentity(claims, this.Scheme.Name);
+        var claimsIdentity = new ClaimsIdentity(claims, this.Scheme.Name, "userId", ClaimTypes.Role);
         var claimsPrincipal = new ClaimsPrincipal (claimsIdentity);
 
         return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(claimsPrincipal), this.Scheme.Name));
