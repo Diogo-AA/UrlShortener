@@ -19,7 +19,7 @@ public interface IRepository
     Task<DateTime?> GetLastTimeApiKeyUpdated(Guid userId);
     Task<Guid?> UpdateApiKey(Guid userId);
     Task<Guid?> GetApiKey(Guid userId);
-    Task<bool> ValidateApiKey(Guid apiKey);
+    Task<ApiKey.ValidationStatus> ValidateApiKey(Guid apiKey);
     Task<string?> CreateShortedUrl(Guid apiKey, Uri originalUrl);
     Task<string?> GetOriginalUrl(string shortedUrlId);
     Task<string?> GetOriginalUrl(Guid userId, string shortedUrlId);

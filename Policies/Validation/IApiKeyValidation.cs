@@ -1,6 +1,8 @@
+using UrlShortener.Models;
+
 namespace UrlShortener.Policies.Validation;
 
 public interface IApiKeyValidation
 {
-    Task<bool> IsValidApiKey(string apiKey);
+    Task<ApiKey.ValidationStatus> IsValidApiKey(string apiKey);
 }

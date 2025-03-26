@@ -482,7 +482,7 @@ public class RepositoryPostgre : IRepository
         return expirationDate >= DateTime.Now ? apiKey : null;
     }
 
-    public async Task<bool> ValidateApiKey(Guid apiKey)
+    public async Task<ApiKey.ValidationStatus> ValidateApiKey(Guid apiKey)
     {
         using var conn = await dataSource.OpenConnectionAsync();
 
@@ -497,12 +497,12 @@ public class RepositoryPostgre : IRepository
 
         using var reader = await cmd.ExecuteReaderAsync();
         if (!reader.HasRows)
-            return false;
+            return ApiKey.ValidationStatus.Invalid;
 
         await reader.ReadAsync();
         var expirationDate = reader.GetDateTime(0);
 
-        return expirationDate >= DateTime.Now;
+        return expirationDate >= DateTime.Now ? ApiKey.ValidationStatus.Valid : ApiKey.ValidationStatus.Expired;
     }
 
     #endregion

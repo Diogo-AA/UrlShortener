@@ -26,10 +26,17 @@ public class ApiKeyHandler : AuthenticationHandler<ApiKeyAuthenticationOptions>
         {
             var responseFeature = Response.HttpContext.Features.Get<IHttpResponseFeature>();
             if (responseFeature is not null)
+            {
                 responseFeature.ReasonPhrase = FailureMessage;
+                
+                if (Context.Items.TryGetValue("statusCode", out object? statusCodeObj) && statusCodeObj is int statusCode)
+                {
+                    responseFeature.StatusCode = statusCode;
+                }
+            }
         }
 
-        return base.HandleChallengeAsync(properties);
+        return Task.CompletedTask;
     }
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -41,24 +48,31 @@ public class ApiKeyHandler : AuthenticationHandler<ApiKeyAuthenticationOptions>
         bool? headerExists = Request.Headers.TryGetValue(ApiKeyAuthenticationOptions.HeaderName, out var apiKey);
         if (!headerExists.GetValueOrDefault())
         {
+            Context.Items.Add("statusCode", StatusCodes.Status401Unauthorized);
             FailureMessage = $"Header: '{ApiKeyAuthenticationOptions.HeaderName}' not found.";
             return AuthenticateResult.Fail(FailureMessage);
         }
 
-        bool isValidApiKey = await _apiKeyValidation.IsValidApiKey(apiKey!);        
-        if (!isValidApiKey)
+        var validationResult = await _apiKeyValidation.IsValidApiKey(apiKey!);
+        switch (validationResult)
         {
-            FailureMessage = "Invalid or expired API key";
-            return AuthenticateResult.Fail(FailureMessage);
+            case Models.ApiKey.ValidationStatus.Invalid:
+                FailureMessage = "Invalid API key";
+                Context.Items.Add("statusCode", StatusCodes.Status401Unauthorized);
+                return AuthenticateResult.Fail(FailureMessage);
+            case Models.ApiKey.ValidationStatus.Expired:
+                FailureMessage = "Expired API key";
+                Context.Items.Add("statusCode", StatusCodes.Status403Forbidden);
+                return AuthenticateResult.Fail(FailureMessage);
+            default:
+                var claims = new List<Claim>()
+                {
+                    new(ApiKeyAuthenticationOptions.HeaderName, apiKey!)
+                };
+                var claimsIdentity = new ClaimsIdentity(claims, this.Scheme.Name, ApiKeyAuthenticationOptions.HeaderName, ClaimTypes.Role);
+                var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+
+                return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(claimsPrincipal), this.Scheme.Name));
         }
-
-        var claims = new List<Claim>()
-        {
-            new(ApiKeyAuthenticationOptions.HeaderName, apiKey!)
-        };
-        var claimsIdentity = new ClaimsIdentity(claims, this.Scheme.Name, ApiKeyAuthenticationOptions.HeaderName, ClaimTypes.Role);
-        var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
-
-        return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(claimsPrincipal), this.Scheme.Name));
     }
 }

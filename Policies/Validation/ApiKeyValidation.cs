@@ -1,4 +1,5 @@
 using UrlShortener.Data;
+using UrlShortener.Models;
 
 namespace UrlShortener.Policies.Validation;
 
@@ -11,16 +12,16 @@ public class ApiKeyValidation : IApiKeyValidation
         _repository = repository;
     }
 
-    public async Task<bool> IsValidApiKey(string apiKey)
+    public async Task<ApiKey.ValidationStatus> IsValidApiKey(string apiKey)
     {
         if (string.IsNullOrWhiteSpace(apiKey))
-            return false;
+            return ApiKey.ValidationStatus.Invalid;
 
         if (!Guid.TryParse(apiKey, out Guid parsedApiKey))
-            return false;
+            return ApiKey.ValidationStatus.Invalid;
 
-        bool isValidApiKey = await _repository.ValidateApiKey(parsedApiKey);
+        var validationResult = await _repository.ValidateApiKey(parsedApiKey);
 
-        return isValidApiKey;
+        return validationResult;
     }
 }

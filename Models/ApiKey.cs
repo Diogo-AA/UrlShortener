@@ -10,6 +10,13 @@ public class ApiKey
     public Guid Key { get; set; }
     public DateTime ExpirationDate { get; set; }
 
+    public enum ValidationStatus
+    {
+        Valid,
+        Invalid,
+        Expired
+    }
+
     public static DateTime GetExpirationDate()
     {
         return GetExpirationDate(DateTime.Now);
