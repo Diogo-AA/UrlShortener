@@ -18,6 +18,7 @@ if (useHttps)
 
     builder.WebHost.ConfigureKestrel(options =>
     {
+        options.AddServerHeader = false;
         options.ConfigureHttpsDefaults(httpsOptions =>
         {
             httpsOptions.ServerCertificate = X509CertificateLoader.LoadPkcs12FromFile("/https/aspnetapp.pfx",
@@ -33,6 +34,11 @@ if (useHttps)
 else
 {
     builder.WebHost.UseUrls(["http://+:80"]);
+    
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.AddServerHeader = false;
+    });
 }
 
 if (!builder.Environment.IsDevelopment())
