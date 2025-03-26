@@ -1,8 +1,9 @@
 services:
   url-shortener-https:
     build: 
-      dockerfile: Dockerfile
-    image: ${DOCKER_REGISTRY-}url-shortener
+      context: .
+      dockerfile: ${DOCKERFILE:-Dockerfile}
+    image: urlshortener
     depends_on:
       postgres:
         condition: service_healthy
@@ -20,14 +21,16 @@ services:
       - ${HTTPS_CERTIFICATE_PATH:-/dev/null}:/https/aspnetapp.pfx:/https/
       - ${DATA_PROTECTION_CERTIFICATE_PATH:-/dev/null}:/app/keys/datacert.pfx
       - dataprotection-keys:/app/keys
+      - ~/.vsdbg:/remote_debugger:rw
     networks:
       - aspnetcore-network
     profiles: [https]
 
   url-shortener-http:
     build: 
-        dockerfile: Dockerfile
-    image: ${DOCKER_REGISTRY-}url-shortener
+        context: .
+        dockerfile: ${DOCKERFILE:-Dockerfile}
+    image: urlshortener
     depends_on:
       postgres:
         condition: service_healthy
@@ -40,6 +43,7 @@ services:
       - "5094:80"
     volumes:
       - dataprotection-keys:/app/keys
+      - ~/.vsdbg:/remote_debugger:rw
     networks:
       - aspnetcore-network
     profiles: [http]
