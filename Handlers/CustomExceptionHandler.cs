@@ -22,11 +22,12 @@ public class CustomExceptionHandler : IExceptionHandler
     {
         var exceptionHandlerFeature = httpContext.Features.Get<IExceptionHandlerFeature>();
         string endpoint = exceptionHandlerFeature?.Path ?? httpContext.Request.Path;
+        endpoint = endpoint.ReplaceLineEndings("");
         
         string traceId = Activity.Current?.Id ?? httpContext.TraceIdentifier;
 
         await _repository.LogError(traceId, endpoint, exception);
-        _logger.LogError("Error occurred in '{Endpoint}' with traceId '{TraceId}' at '{Time}'", endpoint.ReplaceLineEndings(""), traceId, DateTime.UtcNow);
+        _logger.LogError("Error occurred in '{Endpoint}' with traceId '{TraceId}' at '{Time}'", endpoint, traceId, DateTime.UtcNow);
 
         return false;
     }
