@@ -19,7 +19,7 @@ namespace UrlShortener.Controllers
             _cache = cache;
         }
 
-        [HttpGet("{shortedUrlId:minlength(6)}")]
+        [HttpGet("{shortedUrlId:length(6)}")]
         [AllowAnonymous]
         public async Task<IActionResult> Get(string shortedUrlId)
         {
