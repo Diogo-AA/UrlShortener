@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Options;
 using UrlShortener.Models;
 using UrlShortener.Options;
@@ -12,11 +13,24 @@ namespace UrlShortener.Policies.Handlers;
 public class UserAndPasswordHandler : AuthenticationHandler<UserAndPasswordAuthenticationOptions>
 {
     private readonly IUserAndPasswordValidation _userAndPasswordValidation;
+    private string? FailureMessage;
 
     public UserAndPasswordHandler(IOptionsMonitor<UserAndPasswordAuthenticationOptions> options, 
         ILoggerFactory logger, UrlEncoder encoder, IUserAndPasswordValidation userAndPasswordValidation) : base(options, logger, encoder)
     {
         _userAndPasswordValidation = userAndPasswordValidation;
+    }
+
+    protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+    {
+        if (!string.IsNullOrEmpty(FailureMessage))
+        {
+            var responseFeature = Response.HttpContext.Features.Get<IHttpResponseFeature>();
+            if (responseFeature is not null)
+                responseFeature.ReasonPhrase = FailureMessage;
+        }
+
+        return base.HandleChallengeAsync(properties);
     }
     
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -32,12 +46,16 @@ public class UserAndPasswordHandler : AuthenticationHandler<UserAndPasswordAuthe
         }
         catch
         {
-            return AuthenticateResult.Fail("The json body of the request is not valid");
+            FailureMessage = "The json body of the request is not valid";
+            return AuthenticateResult.Fail(FailureMessage);
         }
 
         bool isValidUsernameAndPassword = await _userAndPasswordValidation.IsValidUserAndPassword(user);
         if (!isValidUsernameAndPassword)
-            return AuthenticateResult.Fail("Username or password incorrect");
+        {
+            FailureMessage = "Username or password incorrect";
+            return AuthenticateResult.Fail(FailureMessage);
+        }
 
         var claims = new List<Claim>()
         {
