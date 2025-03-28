@@ -2,7 +2,7 @@
 
 public class Url
 {
-    public const string ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    public const string ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_";
     public const int URL_SHORTED_LENGTH = 6;
 
     public required string ShortedUrl { get; set; }
