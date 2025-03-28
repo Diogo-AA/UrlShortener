@@ -24,15 +24,16 @@ namespace UrlShortener.Controllers
         public async Task<IActionResult> Get(string shortedUrlId)
         {
             string? url = await _cache.GetStringAsync(shortedUrlId);
-            Console.WriteLine($"URL obtained from cache: {url}");
-
+            
             if (string.IsNullOrEmpty(url))
+            {
                 url = await _repository.GetOriginalUrl(shortedUrlId);
-
-            if (string.IsNullOrEmpty(url))
-                return NotFound("Page not found.");
-
-            await _cache.SetStringAsync(shortedUrlId, url, CacheOptions.Options);
+                
+                if (string.IsNullOrEmpty(url))
+                    return NotFound("Page not found");
+                
+                await _cache.SetStringAsync(shortedUrlId, url, CacheOptions.Options);
+            }
 
             return Redirect(url);
         }
