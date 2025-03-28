@@ -31,7 +31,7 @@ public class UserController : ControllerBase
         if (!apiKey.HasValue)
             return Problem("Error creating the user. Try again later.");
 
-        return Ok($"User created succesfully. Your API Key is: {apiKey.Value}");
+        return Ok(new { Message = "User created succesfully", ApiKey = apiKey.Value });
     }
 
     [HttpPatch("update-password")]
