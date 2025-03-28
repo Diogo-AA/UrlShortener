@@ -12,7 +12,7 @@ RUN dotnet restore
 # copy everything else and build app
 COPY . ./
 WORKDIR /source/
-RUN dotnet publish UrlShortener.csproj -c release -o /app --no-restore
+RUN dotnet publish UrlShortener.csproj -c debug -o /app --no-restore
 
 RUN apt update
 RUN apt install curl -y
@@ -22,6 +22,5 @@ RUN curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /remote_d
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
 EXPOSE 80
-EXPOSE 443
 COPY --from=build /app ./
 ENTRYPOINT ["dotnet", "UrlShortener.dll"]
