@@ -23,7 +23,7 @@ public class UrlController : ControllerBase
     {
         bool validUrl = Models.Url.IsValidUrl(url);
         if (!validUrl)
-            return BadRequest("Invalid url.");
+            return BadRequest("Invalid url format.");
 
         Guid apiKey = GetApiKeyFromClaims();
 
