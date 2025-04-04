@@ -31,7 +31,8 @@ public class UrlController : ControllerBase
         if (string.IsNullOrEmpty(shortedUrl))
             return BadRequest($"The url '{url}' is already shortened.");
 
-        return Ok(shortedUrl);
+        string uri = $"{Request.Scheme}:// {Request.Host}{Request.Path}";
+        return Created(uri, shortedUrl);
     }
 
     [HttpDelete("delete")]
@@ -43,7 +44,7 @@ public class UrlController : ControllerBase
         if (!removed)
             return BadRequest("Shorted url id not found.");
 
-        return Ok();
+        return NoContent();
     }
 
     [HttpGet("get")]

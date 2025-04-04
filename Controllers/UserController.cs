@@ -31,7 +31,8 @@ public class UserController : ControllerBase
         if (!apiKey.HasValue)
             return Problem("Error creating the user. Try again later.");
 
-        return Ok(new { Message = "User created succesfully", ApiKey = apiKey.Value });
+        string uri = $"{Request.Scheme}:// {Request.Host}{Request.Path}";
+        return Created(uri, apiKey.Value);
     }
 
     [HttpPatch("update-password")]
@@ -44,7 +45,7 @@ public class UserController : ControllerBase
         if (!passwordUpdated)
             return Problem("Error updating the password. Make sure you use the right password.");
 
-        return Ok();
+        return NoContent();
     }
 
     [HttpDelete("delete")]
@@ -56,7 +57,7 @@ public class UserController : ControllerBase
         if (!userRemoved)
             return Problem("Error removing the user. Try again later.");
 
-        return Ok();
+        return NoContent();
     }
 
     private Guid GetUserIdFromClaims()

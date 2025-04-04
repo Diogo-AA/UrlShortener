@@ -20,20 +20,20 @@ namespace UrlShortener.Controllers
         }
 
         [HttpPost("get")]
-        public async Task<IActionResult> GetApiKey([FromQuery] bool? updateIfExpired)
+        public async Task<IActionResult> GetApiKey()
         {
             var userId = GetUserIdFromClaims();
 
             Guid? apiKey = await _repository.GetApiKey(userId);
-            if (!apiKey.HasValue && !updateIfExpired.GetValueOrDefault())
+            if (!apiKey.HasValue)
             {
-                return Ok("API Key expired. Update your API Key using the 'update' endpoint or defining the parameter 'updateIfExpired' to true.");
+                return Problem(
+                    title: "Expired API Key", 
+                    detail: "Update your API Key using the 'update' endpoint",
+                    statusCode: StatusCodes.Status403Forbidden
+                );
             }
-            else if (!apiKey.HasValue)
-            {
-                return await UpdateApiKey(userId);
-            }
-
+            
             return Ok(apiKey.Value);
         }
 
@@ -49,11 +49,6 @@ namespace UrlShortener.Controllers
             if (DateTime.Now.Subtract(lastUpdated.Value).Minutes <= ApiKey.MAX_MINUTES_BETWEEN_UPDATES)
                 return StatusCode(StatusCodes.Status429TooManyRequests, "API Key changed recently. Wait a few minutes before updating again.");
 
-            return await UpdateApiKey(userId);
-        }
-
-        private async Task<IActionResult> UpdateApiKey(Guid userId)
-        {
             Guid? apiKey = await _repository.UpdateApiKey(userId);
             if (!apiKey.HasValue)
                 return Problem("Error updating the API Key. Try again later.");
