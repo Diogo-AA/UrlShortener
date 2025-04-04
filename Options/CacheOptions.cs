@@ -10,6 +10,6 @@ public class CacheOptions
     public static readonly DistributedCacheEntryOptions Options = new()
     {
         AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(ABSOLUTE_EXPIRATION_RELATIVE_HOURS),
-        SlidingExpiration = TimeSpan.FromSeconds(SLIDING_EXPIRATION_MINUTES)
+        SlidingExpiration = TimeSpan.FromMinutes(SLIDING_EXPIRATION_MINUTES)
     };
 }
