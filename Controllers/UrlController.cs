@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UrlShortener.Data;
 using UrlShortener.Options;
 using UrlShortener.Services;
 
@@ -46,6 +45,18 @@ public class UrlController : ControllerBase
             return BadRequest("Shorted url id not found.");
 
         return NoContent();
+    }
+
+    [HttpGet("get/{shortedUrlId}")]
+    public async Task<IActionResult> Get(string shortedUrlId)
+    {
+        Guid apiKey = GetApiKeyFromClaims();
+
+        var url = await _service.GetUrlAsync(apiKey, shortedUrlId);
+        if (url is null)
+            return BadRequest("Url not found.");
+
+        return Ok(url);
     }
 
     [HttpGet("get")]
