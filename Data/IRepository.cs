@@ -4,9 +4,6 @@ namespace UrlShortener.Data;
 
 public interface IRepository
 {
-    public const int LIMIT_URLS_SHOWN = 100;
-    public const int DEFAULT_URLS_SHOWN = 20;
-
     public void Initialize();
     Task<User?> GetUser(string username);
     Task<User?> GetUser(Guid apiKey);
@@ -24,6 +21,7 @@ public interface IRepository
     Task<string?> GetOriginalUrl(string shortedUrlId);
     Task<string?> GetOriginalUrl(Guid userId, string shortedUrlId);
     Task<bool> RemoveUrl(Guid apiKey, string shortedUrlId);
+    Task<string?> GetUrlFromUser(Guid apiKey, string shortedUrlId);
     Task<IEnumerable<Url>> GetAllUrlsFromUser(Guid apiKey, int limit);
     Task<bool> LogError(string traceId, string endpoint, Exception exception);
 }

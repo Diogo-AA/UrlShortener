@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UrlShortener.Data;
 using UrlShortener.Models;
 using UrlShortener.Options;
+using UrlShortener.Services;
 
 namespace UrlShortener.Controllers;
 
@@ -12,24 +12,20 @@ namespace UrlShortener.Controllers;
 [Authorize(Policy = UserAndPasswordAuthenticationOptions.DefaultPolicy)]
 public class UserController : ControllerBase
 {
-    private readonly IRepository _repository;
+    private readonly IShortenerService _service;
 
-    public UserController(IRepository repository)
+    public UserController(IShortenerService service)
     {
-        _repository = repository;
+        _service = service;
     }
 
     [HttpPost("create")]
     [AllowAnonymous]
     public async Task<IActionResult> Create([FromBody] User userRequest)
     {
-        bool isUsernameInUse = await _repository.IsUsernameInUse(userRequest.Username!);
-        if (isUsernameInUse)
-            return Conflict("Username is already in use.");
-
-        Guid? apiKey = await _repository.CreateUser(userRequest);
+        Guid? apiKey = await _service.CreateUserAsync(userRequest);
         if (!apiKey.HasValue)
-            return Problem("Error creating the user. Try again later.");
+            return Conflict("Username is already in use.");
 
         string uri = $"{Request.Scheme}:// {Request.Host}{Request.Path}";
         return Created(uri, apiKey.Value);
@@ -41,7 +37,7 @@ public class UserController : ControllerBase
         Guid userId = GetUserIdFromClaims();
         string? newPassword = GetNewPasswordFromClaims();
             
-        bool passwordUpdated = await _repository.UpdateUserPassword(new Models.User() { Id = userId, NewPassword = newPassword });
+        bool passwordUpdated = await _service.UpdateUserPasswordAsync(new Models.User() { Id = userId, NewPassword = newPassword });
         if (!passwordUpdated)
             return Problem("Error updating the password. Make sure you use the right password.");
 
@@ -53,7 +49,7 @@ public class UserController : ControllerBase
     {
         Guid userId = GetUserIdFromClaims();
         
-        bool userRemoved = await _repository.RemoveUser(userId);
+        bool userRemoved = await _service.RemoveUserAsync(userId);
         if (!userRemoved)
             return Problem("Error removing the user. Try again later.");
 

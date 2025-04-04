@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UrlShortener.Data;
 using UrlShortener.Options;
+using UrlShortener.Services;
 
 namespace UrlShortener.Controllers;
 
@@ -11,11 +12,11 @@ namespace UrlShortener.Controllers;
 [Authorize(Policy = ApiKeyAuthenticationOptions.DefaultPolicy)]
 public class UrlController : ControllerBase
 {
-    private readonly IRepository _repository;
+    private readonly IShortenerService _service;
 
-    public UrlController(IRepository repository)
+    public UrlController(IShortenerService service)
     {
-        _repository = repository;
+        _service = service;
     }
 
     [HttpPost("create")]
@@ -27,7 +28,7 @@ public class UrlController : ControllerBase
 
         Guid apiKey = GetApiKeyFromClaims();
 
-        string? shortedUrl = await _repository.CreateShortedUrl(apiKey, url);
+        string? shortedUrl = await _service.CreateShortedUrlAsync(apiKey, url);
         if (string.IsNullOrEmpty(shortedUrl))
             return BadRequest($"The url '{url}' is already shortened.");
 
@@ -40,7 +41,7 @@ public class UrlController : ControllerBase
     {
         Guid apiKey = GetApiKeyFromClaims();
 
-        bool removed = await _repository.RemoveUrl(apiKey, shortedUrlId);
+        bool removed = await _service.RemoveUrlAsync(apiKey, shortedUrlId);
         if (!removed)
             return BadRequest("Shorted url id not found.");
 
@@ -48,14 +49,14 @@ public class UrlController : ControllerBase
     }
 
     [HttpGet("get")]
-    public async Task<IActionResult> Get([FromQuery] int limit = IRepository.DEFAULT_URLS_SHOWN)
+    public async Task<IActionResult> Get([FromQuery] int limit = IShortenerService.DEFAULT_URLS_SHOWN)
     {
-        if (limit < 0 || limit > IRepository.LIMIT_URLS_SHOWN)
-            return BadRequest($"The limit of the results shown must be between 0 and {IRepository.LIMIT_URLS_SHOWN}");
+        if (limit < 0 || limit > IShortenerService.LIMIT_URLS_SHOWN)
+            return BadRequest($"The limit of the results shown must be between 0 and {IShortenerService.LIMIT_URLS_SHOWN}");
 
         Guid apiKey = GetApiKeyFromClaims();
 
-        var urls = await _repository.GetAllUrlsFromUser(apiKey, limit);
+        var urls = await _service.GetUrlsAsync(apiKey, limit);
 
         return Ok(urls);
     }

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.DataProtection;
 using UrlShortener.Data;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
+using UrlShortener.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,6 +63,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = redisConnectionString;
 });
 
+builder.Services.AddScoped<IShortenerService, ShortenerService>();
 builder.Services.AddScoped<IApiKeyValidation, ApiKeyValidation>();
 builder.Services.AddScoped<IUserAndPasswordValidation, UserAndPasswordValidation>();
 

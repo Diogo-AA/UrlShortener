@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UrlShortener.Data;
 using UrlShortener.Models;
 using UrlShortener.Options;
+using UrlShortener.Services;
 
 namespace UrlShortener.Controllers
 {
@@ -12,11 +12,11 @@ namespace UrlShortener.Controllers
     [Authorize(Policy = UserAndPasswordAuthenticationOptions.DefaultPolicy)]
     public class ApiKeyController : ControllerBase
     {
-        private readonly IRepository _repository;
+        private readonly IShortenerService _service;
 
-        public ApiKeyController(IRepository repository)
+        public ApiKeyController(IShortenerService service)
         {
-            _repository = repository;
+            _service = service;
         }
 
         [HttpPost("get")]
@@ -24,7 +24,7 @@ namespace UrlShortener.Controllers
         {
             var userId = GetUserIdFromClaims();
 
-            Guid? apiKey = await _repository.GetApiKey(userId);
+            Guid? apiKey = await _service.GetApiKeyAsync(userId);
             if (!apiKey.HasValue)
             {
                 return Problem(
@@ -42,14 +42,14 @@ namespace UrlShortener.Controllers
         {
             var userId = GetUserIdFromClaims();
 
-            DateTime? lastUpdated = await _repository.GetLastTimeApiKeyUpdated(userId);
+            DateTime? lastUpdated = await _service.GetLastTimeApiKeyUpdatedAsync(userId);
             if (!lastUpdated.HasValue)
                 return Problem("Error updating the API Key. Try again later.");
 
             if (DateTime.Now.Subtract(lastUpdated.Value).Minutes <= ApiKey.MAX_MINUTES_BETWEEN_UPDATES)
                 return StatusCode(StatusCodes.Status429TooManyRequests, "API Key changed recently. Wait a few minutes before updating again.");
-
-            Guid? apiKey = await _repository.UpdateApiKey(userId);
+            
+            Guid? apiKey = await _service.UpdateApiKeyAsync(userId);
             if (!apiKey.HasValue)
                 return Problem("Error updating the API Key. Try again later.");
 

@@ -626,6 +626,30 @@ public class RepositoryPostgre : IRepository
         }
     }
 
+    public async Task<string?> GetUrlFromUser(Guid apiKey, string shortedUrlId)
+    {
+        User? user = await GetUser(apiKey) ?? throw new AuthenticationException("Couldn't get the user through the API Key");
+
+        using var conn = await dataSource.OpenConnectionAsync();
+
+        string sql = """
+            SELECT "originalUrl"
+            FROM "Urls"
+            WHERE "userId" = @userId and "shortedUrl" = @shortedUrl
+            LIMIT 1
+            """;
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("userId", user.Id);
+        cmd.Parameters.AddWithValue("shortedUrl", shortedUrlId);
+
+        using var reader = await cmd.ExecuteReaderAsync();
+        if (!reader.HasRows)
+            return null;
+
+        await reader.ReadAsync();
+        return reader.GetString(0);
+    }
+
     public async Task<IEnumerable<Url>> GetAllUrlsFromUser(Guid apiKey, int limit)
     {
         User? user = await GetUser(apiKey) ?? throw new AuthenticationException("Couldn't get the user through the API Key");

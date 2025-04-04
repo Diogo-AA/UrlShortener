@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
-using UrlShortener.Data;
-using UrlShortener.Options;
+using UrlShortener.Services;
 
 namespace UrlShortener.Controllers
 {
@@ -10,12 +9,12 @@ namespace UrlShortener.Controllers
     [ApiController]
     public class RedirectController : ControllerBase
     {
-        private readonly IRepository _repository;
+        private readonly IShortenerService _service;
         private readonly IDistributedCache _cache;
 
-        public RedirectController(IRepository repository, IDistributedCache cache)
+        public RedirectController(IShortenerService service, IDistributedCache cache)
         {
-            _repository = repository;
+            _service = service;
             _cache = cache;
         }
 
@@ -23,17 +22,9 @@ namespace UrlShortener.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Get(string shortedUrlId)
         {
-            string? url = await _cache.GetStringAsync(shortedUrlId);
-            
+            string? url = await _service.GetOriginalUrlAsync(shortedUrlId);
             if (string.IsNullOrEmpty(url))
-            {
-                url = await _repository.GetOriginalUrl(shortedUrlId);
-                
-                if (string.IsNullOrEmpty(url))
-                    return NotFound("Page not found");
-                
-                await _cache.SetStringAsync(shortedUrlId, url, CacheOptions.Options);
-            }
+                return NotFound();
 
             return Redirect(url);
         }
