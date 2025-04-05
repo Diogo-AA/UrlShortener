@@ -1,5 +1,4 @@
-﻿using System.Text;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using UrlShortener.Models;
 
 namespace UrlShortener.Utils;
