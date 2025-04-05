@@ -14,6 +14,7 @@ services:
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
       - ConnectionStrings__PostgresConnection=Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD};
       - ConnectionStrings__RedisConnection=redis:6379
+      - HOSTNAME=${HOSTNAME:-localhost:7262}
     ports:
       - "5094:80"
       - "7262:443"
@@ -39,6 +40,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
       - ConnectionStrings__PostgresConnection=Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD};
       - ConnectionStrings__RedisConnection=redis:6379
+      - HOSTNAME=${HOSTNAME:-localhost:5094}
     ports:
       - "5094:80"
     volumes:

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UrlShortener.Models;
 using UrlShortener.Options;
 using UrlShortener.Services;
 
@@ -26,8 +27,8 @@ public class UrlController : ControllerBase
 
         Guid apiKey = GetApiKeyFromClaims();
 
-        string? shortedUrl = await _service.CreateShortedUrlAsync(apiKey, url);
-        if (string.IsNullOrEmpty(shortedUrl))
+        Url? shortedUrl = await _service.CreateShortedUrlAsync(apiKey, url);
+        if (shortedUrl is null)
             return BadRequest($"The url '{url}' is already shortened.");
 
         string createdAt = $"{Request.Scheme}:// {Request.Host}{Request.Path}";

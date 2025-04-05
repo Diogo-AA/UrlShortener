@@ -7,6 +7,7 @@ public class Url
     private const int MIN_URL_SHORTED_LENGTH = 6;
 
     public required string ShortedUrl { get; set; }
+    public required string ShortedUrlId { get; set; }
     public required string OriginalUrl { get; set; }
 
     public static bool IsValidUrl(Uri url)

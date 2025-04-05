@@ -17,11 +17,11 @@ public interface IRepository
     Task<Guid?> UpdateApiKey(Guid userId);
     Task<Guid?> GetApiKey(Guid userId);
     Task<ApiKey.ValidationStatus> ValidateApiKey(Guid apiKey);
-    Task<string?> CreateShortedUrl(Guid apiKey, Uri originalUrl);
+    Task<bool> CreateShortedUrl(Guid apiKey, Url originalUrl);
     Task<string?> GetOriginalUrl(string shortedUrlId);
     Task<string?> GetOriginalUrl(Guid userId, string shortedUrlId);
     Task<bool> RemoveUrl(Guid apiKey, string shortedUrlId);
     Task<string?> GetUrlFromUser(Guid apiKey, string shortedUrlId);
-    Task<IEnumerable<Url>> GetAllUrlsFromUser(Guid apiKey, int limit);
+    Task<IEnumerable<Url>> GetAllUrlsFromUser(Guid apiKey, Func<string, string> GetShortedUrl, int limit);
     Task<bool> LogError(string traceId, string endpoint, Exception exception);
 }

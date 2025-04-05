@@ -25,7 +25,7 @@ public interface IShortenerService
 #endregion
 
 #region  Url
-    public Task<string?> CreateShortedUrlAsync(Guid apiKey, Uri url);
+    public Task<Url?> CreateShortedUrlAsync(Guid apiKey, Uri url);
 
     public Task<bool> RemoveUrlAsync(Guid apiKey, string shortedUrlId);
 

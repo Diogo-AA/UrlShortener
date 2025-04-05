@@ -8,6 +8,7 @@ using UrlShortener.Data;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
 using UrlShortener.Services;
+using UrlShortener.Factories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,6 +47,16 @@ if (!builder.Environment.IsDevelopment())
 {
     builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 }
+
+builder.Services.AddSingleton(options => 
+{
+    string? hostname = builder.Configuration["Hostname"];
+    ArgumentException.ThrowIfNullOrWhiteSpace(hostname);
+    
+    string scheme = useHttps ? "https" : "http";
+
+    return new UrlModelFactory(scheme, hostname);
+});
 
 builder.Services.AddScoped<IRepository, RepositoryPostgre>(sp =>
 {

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Caching.Distributed;
 using UrlShortener.Data;
+using UrlShortener.Factories;
 using UrlShortener.Models;
 using UrlShortener.Options;
 
@@ -9,11 +10,13 @@ public class ShortenerService : IShortenerService
 {
     private readonly IRepository _repository;
     private readonly IDistributedCache _cache;
+    private readonly UrlModelFactory _urlModelFactory;
 
-    public ShortenerService(IRepository repository, IDistributedCache cache)
+    public ShortenerService(IRepository repository, IDistributedCache cache, UrlModelFactory urlModelFactory)
     {
         _repository = repository;
         _cache = cache;
+        _urlModelFactory = urlModelFactory;
     }
 
     #region  User
@@ -60,9 +63,13 @@ public class ShortenerService : IShortenerService
 #endregion
 
 #region  Url
-    public async Task<string?> CreateShortedUrlAsync(Guid apiKey, Uri url)
+    public async Task<Url?> CreateShortedUrlAsync(Guid apiKey, Uri url)
     {
-        return await _repository.CreateShortedUrl(apiKey, url);
+        Url shortedUrl = _urlModelFactory.Create(url.AbsoluteUri);
+
+        bool shortedUrlCreated = await _repository.CreateShortedUrl(apiKey, shortedUrl);
+
+        return shortedUrlCreated ? shortedUrl : null;
     }
 
     public async Task<bool> RemoveUrlAsync(Guid apiKey, string shortedUrlId)
@@ -76,7 +83,7 @@ public class ShortenerService : IShortenerService
 
     public async Task<IEnumerable<Url>> GetUrlsAsync(Guid apiKey, int limit = IShortenerService.LIMIT_URLS_SHOWN)
     {
-        return await _repository.GetAllUrlsFromUser(apiKey, limit);
+        return await _repository.GetAllUrlsFromUser(apiKey, _urlModelFactory.GetShortedUrl, limit);
     }
 
     public async Task<Url?> GetUrlAsync(Guid apiKey, string shortedUrlId)
@@ -85,7 +92,7 @@ public class ShortenerService : IShortenerService
         if (string.IsNullOrEmpty(originalUrl))
             return null;
 
-        return new Url() { OriginalUrl = originalUrl, ShortedUrl = shortedUrlId };
+        return _urlModelFactory.Create(originalUrl, shortedUrlId);
     }
 
     public async Task<string?> GetOriginalUrlAsync(string shortedUrlId)

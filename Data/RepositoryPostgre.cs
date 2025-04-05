@@ -509,7 +509,7 @@ public class RepositoryPostgre : IRepository
 
     #region Urls functions
 
-    public async Task<string?> CreateShortedUrl(Guid apiKey, Uri originalUrl)
+    public async Task<bool> CreateShortedUrl(Guid apiKey, Url shortedUrl)
     {
         User? user = await GetUser(apiKey) ?? throw new AuthenticationException("Couldn't get the user through the API Key");
 
@@ -526,23 +526,22 @@ public class RepositoryPostgre : IRepository
             await using var cmd = new NpgsqlCommand(sql, conn);
 
             var id = Guid.CreateVersion7();
-            string shortedUrl = Cryptography.GenerateShortUrl();
 
             cmd.Parameters.AddWithValue("id", id);
             cmd.Parameters.AddWithValue("userId", user.Id);
-            cmd.Parameters.AddWithValue("shortedUrl", shortedUrl);
-            cmd.Parameters.AddWithValue("originalUrl", originalUrl.AbsoluteUri);
+            cmd.Parameters.AddWithValue("shortedUrl", shortedUrl.ShortedUrlId);
+            cmd.Parameters.AddWithValue("originalUrl", shortedUrl.OriginalUrl);
 
             await cmd.ExecuteNonQueryAsync();
             await transaction.CommitAsync();
-            return shortedUrl;
+            return true;
         }
         catch (NpgsqlException ex) 
         {
             await transaction.RollbackAsync();
 
             if (ex.SqlState == PostgresErrorCodes.UniqueViolation)
-                return null;
+                return false;
             else
                 throw;
         }
@@ -650,7 +649,7 @@ public class RepositoryPostgre : IRepository
         return reader.GetString(0);
     }
 
-    public async Task<IEnumerable<Url>> GetAllUrlsFromUser(Guid apiKey, int limit)
+    public async Task<IEnumerable<Url>> GetAllUrlsFromUser(Guid apiKey, Func<string, string> GetShortedUrl, int limit)
     {
         User? user = await GetUser(apiKey) ?? throw new AuthenticationException("Couldn't get the user through the API Key");
 
@@ -673,10 +672,12 @@ public class RepositoryPostgre : IRepository
         var urls = new List<Url>();
         while (await reader.ReadAsync())
         {
+            string shortedUrlId = reader.GetString(0);
             urls.Add(new Url()
             {
-                ShortedUrl = reader.GetString(0),
-                OriginalUrl = reader.GetString(1)
+                ShortedUrlId = shortedUrlId,
+                OriginalUrl = reader.GetString(1),
+                ShortedUrl = GetShortedUrl(shortedUrlId)
             });
         }
 
