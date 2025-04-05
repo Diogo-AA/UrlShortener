@@ -30,8 +30,8 @@ public class UrlController : ControllerBase
         if (string.IsNullOrEmpty(shortedUrl))
             return BadRequest($"The url '{url}' is already shortened.");
 
-        string uri = $"{Request.Scheme}:// {Request.Host}{Request.Path}";
-        return Created(uri, shortedUrl);
+        string createdAt = $"{Request.Scheme}:// {Request.Host}{Request.Path}";
+        return Created(createdAt, shortedUrl);
     }
 
     [HttpDelete("delete")]

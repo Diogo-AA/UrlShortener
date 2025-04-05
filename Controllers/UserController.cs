@@ -30,8 +30,8 @@ public class UserController : ControllerBase
         if (!apiKey.HasValue)
             return Conflict("Username is already in use.");
 
-        string uri = $"{Request.Scheme}:// {Request.Host}{Request.Path}";
-        return Created(uri, apiKey.Value);
+        string createdAt = $"{Request.Scheme}:// {Request.Host}{Request.Path}";
+        return Created(createdAt, apiKey.Value);
     }
 
     [HttpPatch("update-password")]
