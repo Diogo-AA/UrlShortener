@@ -14,10 +14,10 @@ public class UserAndPasswordValidation : IUserAndPasswordValidation
 
     public async Task<bool> IsValidUserAndPassword(User? user)
     {
-        if (user is null || string.IsNullOrWhiteSpace(user.Username) || string.IsNullOrWhiteSpace(user.Password))
+        if (!User.IsValid(user))
             return false;
 
-        bool isValidUser = await _repository.VerifyUser(user);
+        bool isValidUser = await _repository.VerifyUser(user!);
 
         return isValidUser;
     }

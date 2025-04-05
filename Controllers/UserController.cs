@@ -23,6 +23,9 @@ public class UserController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Create([FromBody] User userRequest)
     {
+        if (!Models.User.IsValid(userRequest))
+            return BadRequest("Username or password are not valid.");
+
         Guid? apiKey = await _service.CreateUserAsync(userRequest);
         if (!apiKey.HasValue)
             return Conflict("Username is already in use.");
@@ -36,6 +39,9 @@ public class UserController : ControllerBase
     {
         Guid userId = GetUserIdFromClaims();
         string? newPassword = GetNewPasswordFromClaims();
+
+        if (string.IsNullOrWhiteSpace(newPassword))
+            return BadRequest("New password can't be empty.");
             
         bool passwordUpdated = await _service.UpdateUserPasswordAsync(new Models.User() { Id = userId, NewPassword = newPassword });
         if (!passwordUpdated)

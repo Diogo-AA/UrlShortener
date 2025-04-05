@@ -21,8 +21,7 @@ public class UrlController : ControllerBase
     [HttpPost("create")]
     public async Task<IActionResult> Create([FromBody] Uri url)
     {
-        bool validUrl = Models.Url.IsValidUrl(url);
-        if (!validUrl)
+        if (!Models.Url.IsValidUrl(url))
             return BadRequest("Invalid url format.");
 
         Guid apiKey = GetApiKeyFromClaims();
@@ -38,6 +37,9 @@ public class UrlController : ControllerBase
     [HttpDelete("delete")]
     public async Task<IActionResult> Delete([FromBody] string shortedUrlId)
     {
+        if (!Models.Url.IsValidShortedUrlId(shortedUrlId))
+            return BadRequest("Shorted url id is not valid.");
+
         Guid apiKey = GetApiKeyFromClaims();
 
         bool removed = await _service.RemoveUrlAsync(apiKey, shortedUrlId);
@@ -50,6 +52,9 @@ public class UrlController : ControllerBase
     [HttpGet("get/{shortedUrlId}")]
     public async Task<IActionResult> Get(string shortedUrlId)
     {
+        if (!Models.Url.IsValidShortedUrlId(shortedUrlId))
+            return BadRequest("Shorted url id is not valid.");
+            
         Guid apiKey = GetApiKeyFromClaims();
 
         var url = await _service.GetUrlAsync(apiKey, shortedUrlId);

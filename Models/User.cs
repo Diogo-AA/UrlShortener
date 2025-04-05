@@ -7,6 +7,12 @@ public class User
     public string? Password { get; set; }
     public string? NewPassword { get; set; }
 
+    public static bool IsValid(User? user)
+    {
+        return user is not null && !string.IsNullOrWhiteSpace(user.Username) 
+            && !string.IsNullOrWhiteSpace(user.Password);
+    }
+
     public override bool Equals(object? obj)
     {
         if (obj is User user)
