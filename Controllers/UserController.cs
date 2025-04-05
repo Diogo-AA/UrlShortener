@@ -45,7 +45,7 @@ public class UserController : ControllerBase
             
         bool passwordUpdated = await _service.UpdateUserPasswordAsync(new Models.User() { Id = userId, NewPassword = newPassword });
         if (!passwordUpdated)
-            return Problem("Error updating the password. Make sure you use the right password.");
+            return Problem("Error updating the password.");
 
         return NoContent();
     }
